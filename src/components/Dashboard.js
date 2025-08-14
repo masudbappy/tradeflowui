@@ -1,7 +1,10 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import './Dashboard.css';
+import Inventory from './Inventory';
 
 const Dashboard = ({ onLogout }) => {
+  const [view, setView] = useState('dashboard');
   // Dummy data for demonstration
   const todaySales = 12500;
   const receivables = 35000;
@@ -17,8 +20,8 @@ const Dashboard = ({ onLogout }) => {
     <div className="dashboard-container">
       <nav className="dashboard-nav">
         <ul>
-          <li>Dashboard</li>
-          <li>Inventory</li>
+          <li style={{cursor: 'pointer', fontWeight: view==='dashboard'?'bold':'normal'}} onClick={() => setView('dashboard')}>Dashboard</li>
+          <li style={{cursor: 'pointer', fontWeight: view==='inventory'?'bold':'normal'}} onClick={() => setView('inventory')}>Inventory</li>
           <li>Sales</li>
           <li>Customers</li>
           <li>Reports</li>
@@ -27,32 +30,37 @@ const Dashboard = ({ onLogout }) => {
         </ul>
       </nav>
       <div className="dashboard-main">
-        <div className="dashboard-boxes">
-          <div className="dashboard-box">
-            <h3>Today’s Total Sales</h3>
-            <p>৳ {todaySales}</p>
-          </div>
-          <div className="dashboard-box">
-            <h3>Total Receivables</h3>
-            <p>৳ {receivables}</p>
-          </div>
-          <div className="dashboard-box">
-            <h3>Low Stock Items</h3>
-            <p>{lowStock} items running low in stock</p>
-          </div>
-          <div className="dashboard-box">
-            <h3>Cash in Hand</h3>
-            <p>৳ {cashInHand}</p>
-          </div>
-        </div>
-        <div className="dashboard-activity">
-          <h3>Recent Activity</h3>
-          <ul>
-            {recentActivity.map((item, idx) => (
-              <li key={idx}>{item.message}</li>
-            ))}
-          </ul>
-        </div>
+        {view === 'dashboard' && (
+          <>
+            <div className="dashboard-boxes">
+              <div className="dashboard-box">
+                <h3>Today’s Total Sales</h3>
+                <p>৳ {todaySales}</p>
+              </div>
+              <div className="dashboard-box">
+                <h3>Total Receivables</h3>
+                <p>৳ {receivables}</p>
+              </div>
+              <div className="dashboard-box">
+                <h3>Low Stock Items</h3>
+                <p>{lowStock} items running low in stock</p>
+              </div>
+              <div className="dashboard-box">
+                <h3>Cash in Hand</h3>
+                <p>৳ {cashInHand}</p>
+              </div>
+            </div>
+            <div className="dashboard-activity">
+              <h3>Recent Activity</h3>
+              <ul>
+                {recentActivity.map((item, idx) => (
+                  <li key={idx}>{item.message}</li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+        {view === 'inventory' && <Inventory />}
       </div>
     </div>
   );
