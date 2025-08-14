@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
+import Dashboard from './components/Dashboard';
 
 const languageContent = {
   en: {
@@ -22,10 +23,24 @@ const languageContent = {
 
 function App() {
   const [language, setLanguage] = useState('bn');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const changeLanguage = (lang) => {
     setLanguage(lang);
   };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
+  if (isLoggedIn) {
+    return <Dashboard onLogout={handleLogout} />;
+  }
 
   return (
     <div className="App">
@@ -33,14 +48,13 @@ function App() {
         <button onClick={() => changeLanguage('en')}>English</button>
         <button onClick={() => changeLanguage('bn')}>বাংলা</button>
       </div>
-      
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
             <h2>{languageContent[language].loginTitle}</h2>
             <p>{languageContent[language].loginPrompt}</p>
           </div>
-          <form id="login-form">
+          <form id="login-form" onSubmit={handleLogin}>
             <div className="input-group">
               <i className="fas fa-user"></i>
               <input type="text" placeholder={languageContent[language].usernamePlaceholder} required />
