@@ -5,6 +5,7 @@ import Inventory from './Inventory';
 import SalesInvoice from './SalesInvoice';
 import CustomerProfile from './CustomerProfile';
 import Report from './Report';
+import UserManagement from './UserManagement';
 
 const Dashboard = ({ onLogout }) => {
   const [view, setView] = useState('dashboard');
@@ -28,7 +29,7 @@ const Dashboard = ({ onLogout }) => {
           <li style={{cursor: 'pointer', fontWeight: view==='sales'?'bold':'normal'}} onClick={() => setView('sales')}>Sales</li>
           <li style={{cursor: 'pointer', fontWeight: view==='customer'?'bold':'normal'}} onClick={() => setView('customer')}>Customers</li>
           <li style={{cursor: 'pointer', fontWeight: view==='report'?'bold':'normal'}} onClick={() => setView('report')}>Reports</li>
-          <li>User Management</li>
+          <li style={{cursor: 'pointer', fontWeight: view==='user'?'bold':'normal'}} onClick={() => setView('user')}>User Management</li>
           <li style={{cursor: 'pointer', color: '#e53935'}} onClick={onLogout}>Logout</li>
         </ul>
       </nav>
@@ -67,6 +68,7 @@ const Dashboard = ({ onLogout }) => {
   {view === 'sales' && <SalesInvoice />}
   {view === 'customer' && <CustomerProfile />}
   {view === 'report' && <Report />}
+  {view === 'user' && <UserManagement isAdmin={true} />}
       </div>
     </div>
   );
