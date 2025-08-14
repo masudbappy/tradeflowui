@@ -1,0 +1,134 @@
+.invoice-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.invoice-section {
+  margin-bottom: 2rem;
+}
+.customer-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.add-customer-btn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.customer-list {
+  background: #f7f8fa;
+  border: 1px solid #bdbdbd;
+  border-radius: 5px;
+  max-height: 120px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+.customer-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+.customer-item:hover {
+  background: #e3e6ee;
+}
+.customer-info {
+  background: #e3e6ee;
+  padding: 0.7rem 1rem;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+}
+.add-customer-form {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.add-customer-form input {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+.add-customer-form button {
+  background: #2e7d32;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.add-customer-form button[type="button"] {
+  background: #e53935;
+}
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background: #f7f8fa;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.product-table th, .product-table td {
+  padding: 0.7rem 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+}
+.product-table th {
+  background: #e3e6ee;
+  color: #1a2332;
+}
+.add-product-btn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 0.7rem;
+}
+.calc-row {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.calc-row input, .calc-row select {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-left: 0.5rem;
+}
+.invoice-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.create-btn {
+  background: #2e7d32;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.draft-btn {
+  background: #6d4c41;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}

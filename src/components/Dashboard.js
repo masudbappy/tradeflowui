@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
 import Inventory from './Inventory';
+import SalesInvoice from './SalesInvoice';
+import CustomerProfile from './CustomerProfile';
 
 const Dashboard = ({ onLogout }) => {
   const [view, setView] = useState('dashboard');
@@ -22,8 +24,8 @@ const Dashboard = ({ onLogout }) => {
         <ul>
           <li style={{cursor: 'pointer', fontWeight: view==='dashboard'?'bold':'normal'}} onClick={() => setView('dashboard')}>Dashboard</li>
           <li style={{cursor: 'pointer', fontWeight: view==='inventory'?'bold':'normal'}} onClick={() => setView('inventory')}>Inventory</li>
-          <li>Sales</li>
-          <li>Customers</li>
+          <li style={{cursor: 'pointer', fontWeight: view==='sales'?'bold':'normal'}} onClick={() => setView('sales')}>Sales</li>
+          <li style={{cursor: 'pointer', fontWeight: view==='customer'?'bold':'normal'}} onClick={() => setView('customer')}>Customers</li>
           <li>Reports</li>
           <li>User Management</li>
           <li style={{cursor: 'pointer', color: '#e53935'}} onClick={onLogout}>Logout</li>
@@ -60,7 +62,9 @@ const Dashboard = ({ onLogout }) => {
             </div>
           </>
         )}
-        {view === 'inventory' && <Inventory />}
+  {view === 'inventory' && <Inventory />}
+  {view === 'sales' && <SalesInvoice />}
+  {view === 'customer' && <CustomerProfile />}
       </div>
     </div>
   );
