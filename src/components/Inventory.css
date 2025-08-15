@@ -1,6 +1,6 @@
 .inventory-container {
-  max-width: 1100px;
-  margin: 0;
+  max-width: 100%; /* Allow the panel to take full width */
+  margin: 0 auto;
   background: #f7f8fa;
   padding: 1.5rem;
   border-radius: 10px;
@@ -29,6 +29,7 @@
 }
 
 .inventory-table {
+  table-layout: auto; /* Allow columns to adjust dynamically */
   width: 100%;
   border-collapse: collapse;
   background: #fff;
@@ -37,6 +38,7 @@
   overflow-x: auto;
   display: block;
   white-space: nowrap;
+  word-wrap: break-word;
 }
 
 .inventory-table thead, .inventory-table tbody {
@@ -50,13 +52,38 @@
   border-bottom: 1px solid #e0e0e0;
   text-align: left;
   word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 150px; /* Ensure columns have a minimum width */
+  max-width: 300px; /* Prevent columns from becoming too wide */
 }
 
 .inventory-table th {
   background: #e3e6ee;
   color: #1a2332;
   font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
 }
+
+/* Fix for "In Action" header and buttons alignment */
+.edit-btn, .history-btn {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.inventory-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Prevent text breaking */
+.inventory-table th, .inventory-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .edit-btn, .history-btn {
   background: #1976d2;
   color: #fff;
@@ -90,21 +117,59 @@
   background: #fff;
   padding: 2rem;
   border-radius: 10px;
-  min-width: 350px;
+  min-width: 600px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 2px 16px rgba(0,0,0,0.15);
 }
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+  color: #1a2332;
+  font-weight: 500;
+}
+
 .modal-form label {
-  display: block;
+  display: flex;
+  flex-direction: column;
   margin-bottom: 1rem;
   color: #1a2332;
+  font-weight: 500;
 }
+
 .modal-form input, .modal-form select {
   width: 100%;
-  padding: 0.5rem;
-  margin-top: 0.3rem;
-  border: 1px solid #bdbdbd;
-  border-radius: 4px;
+  padding: 0.6rem;
+  margin-top: 0.4rem;
+  border: 2px solid #e1e1e1;
+  border-radius: 6px;
   font-size: 1rem;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.modal-form input:focus, .modal-form select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.image-preview {
+  margin-top: 0.5rem;
 }
 .modal-actions {
   display: flex;
@@ -155,7 +220,13 @@
   
   .modal-content {
     min-width: 320px;
+    max-width: 500px;
     padding: 1.5rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0.75rem;
   }
 }
 
@@ -164,7 +235,7 @@
   .inventory-container {
     padding: 1rem;
   }
-  
+
   .inventory-header {
     flex-direction: column;
     align-items: stretch;
@@ -178,12 +249,14 @@
   }
   
   .inventory-table {
-    font-size: 0.9rem;
+    display: block;
+    overflow-x: auto;
   }
   
   .inventory-table th, .inventory-table td {
-    padding: 0.6rem 0.4rem;
+    min-width: 100px;
     font-size: 0.85rem;
+    padding: 0.5rem;
   }
   
   .edit-btn, .history-btn {
@@ -195,8 +268,19 @@
   
   .modal-content {
     min-width: 280px;
+    max-width: 400px;
     padding: 1.25rem;
     margin: 1rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .modal-form input, .modal-form select {
+    padding: 0.7rem 0.5rem;
+    font-size: 0.95rem;
   }
   
   .modal-actions {
@@ -241,12 +325,36 @@
   
   .modal-content {
     min-width: 260px;
+    max-width: 350px;
     padding: 1rem;
     margin: 0.5rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0.5rem;
   }
   
   .modal-form input, .modal-form select {
     padding: 0.6rem 0.4rem;
     font-size: 0.9rem;
   }
+  
+  .image-preview img {
+    width: 80px !important;
+    height: 80px !important;
+  }
+}
+
+/* Additional Responsive Fixes */
+
+/* Ensure table rows and columns do not overlap */
+.inventory-table {
+  table-layout: auto;
+  word-wrap: break-word;
+}
+
+.inventory-table th, .inventory-table td {
+  word-break: break-word;
+  white-space: normal;
 }
