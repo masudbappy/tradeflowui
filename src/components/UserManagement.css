@@ -1,16 +1,18 @@
 .user-management-container {
   max-width: 900px;
-  margin: 2rem auto;
+  margin: 0;
   background: #fff;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
+
 .user-header {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 1.5rem;
 }
+
 .add-user-btn {
   background: #1976d2;
   color: #fff;
@@ -21,24 +23,38 @@
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .add-user-btn:hover {
   background: #1565c0;
 }
+
 .user-table {
   width: 100%;
   border-collapse: collapse;
   background: #f7f8fa;
   border-radius: 10px;
   overflow: hidden;
+  overflow-x: auto;
+  display: block;
 }
+
+.user-table thead, .user-table tbody {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .user-table th, .user-table td {
   padding: 0.9rem 0.7rem;
   border-bottom: 1px solid #e0e0e0;
   text-align: left;
+  word-wrap: break-word;
 }
+
 .user-table th {
   background: #e3e6ee;
   color: #1a2332;
+  font-weight: 600;
 }
 .edit-btn, .delete-btn {
   background: #1976d2;
@@ -115,4 +131,128 @@
 }
 .cancel-btn:hover {
   background: #b71c1c;
+}
+
+.save-btn:hover {
+  background: #1b5e20;
+}
+
+/* Responsive Design */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .user-management-container {
+    padding: 1.25rem;
+  }
+  
+  .user-table th, .user-table td {
+    padding: 0.7rem 0.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .edit-btn, .delete-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.9rem;
+    margin-right: 0.3rem;
+  }
+  
+  .modal-content {
+    min-width: 320px;
+    padding: 1.5rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .user-management-container {
+    padding: 1rem;
+  }
+  
+  .user-header {
+    justify-content: stretch;
+  }
+  
+  .add-user-btn {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+  
+  .user-table {
+    font-size: 0.9rem;
+  }
+  
+  .user-table th, .user-table td {
+    padding: 0.6rem 0.4rem;
+    font-size: 0.85rem;
+  }
+  
+  .edit-btn, .delete-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .modal-content {
+    min-width: 280px;
+    padding: 1.25rem;
+    margin: 1rem;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .save-btn, .cancel-btn {
+    width: 100%;
+    padding: 0.75rem;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .user-management-container {
+    padding: 0.75rem;
+  }
+  
+  .user-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .user-table thead, .user-table tbody {
+    display: table;
+    min-width: 500px;
+  }
+  
+  .user-table th, .user-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.8rem;
+    min-width: 80px;
+  }
+  
+  .edit-btn, .delete-btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .modal-content {
+    min-width: 260px;
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+  
+  .modal-form input, .modal-form select {
+    padding: 0.6rem 0.4rem;
+    font-size: 0.9rem;
+  }
+  
+  .modal-form label {
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
 }

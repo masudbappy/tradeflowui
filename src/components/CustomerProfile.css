@@ -1,36 +1,53 @@
 .customer-profile-container {
   max-width: 700px;
-  margin: 2rem auto;
+  margin: 0;
   background: #fff;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
+
 .customer-info-top {
   margin-bottom: 2rem;
 }
+
 .customer-info-top h2 {
   margin-bottom: 0.5rem;
   color: #1976d2;
+  font-size: 1.5rem;
 }
+
 .history-section {
   margin-top: 1.5rem;
 }
+
 .history-table {
   width: 100%;
   border-collapse: collapse;
   background: #f7f8fa;
   border-radius: 8px;
   overflow: hidden;
+  overflow-x: auto;
+  display: block;
 }
+
+.history-table thead, .history-table tbody {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .history-table th, .history-table td {
   padding: 0.7rem 0.5rem;
   border-bottom: 1px solid #e0e0e0;
   text-align: left;
+  word-wrap: break-word;
 }
+
 .history-table th {
   background: #e3e6ee;
   color: #1a2332;
+  font-weight: 600;
 }
 .invoice-link {
   background: none;
@@ -85,4 +102,115 @@
 }
 .close-btn:hover {
   background: #b71c1c;
+}
+
+/* Responsive Design */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .customer-profile-container {
+    padding: 1.25rem;
+  }
+  
+  .history-table th, .history-table td {
+    padding: 0.6rem 0.4rem;
+    font-size: 0.95rem;
+  }
+  
+  .modal-content {
+    min-width: 320px;
+    padding: 1.5rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .customer-profile-container {
+    padding: 1rem;
+  }
+  
+  .customer-info-top h2 {
+    font-size: 1.3rem;
+  }
+  
+  .history-table {
+    font-size: 0.9rem;
+  }
+  
+  .history-table th, .history-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.85rem;
+  }
+  
+  .invoice-link {
+    font-size: 0.9rem;
+  }
+  
+  .status {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  
+  .modal-content {
+    min-width: 280px;
+    padding: 1.25rem;
+    margin: 1rem;
+  }
+  
+  .close-btn {
+    width: 100%;
+    padding: 0.75rem;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .customer-profile-container {
+    padding: 0.75rem;
+  }
+  
+  .customer-info-top {
+    margin-bottom: 1.5rem;
+  }
+  
+  .customer-info-top h2 {
+    font-size: 1.2rem;
+  }
+  
+  .history-section {
+    margin-top: 1.25rem;
+  }
+  
+  .history-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .history-table thead, .history-table tbody {
+    display: table;
+    min-width: 500px;
+  }
+  
+  .history-table th, .history-table td {
+    padding: 0.4rem 0.25rem;
+    font-size: 0.8rem;
+    min-width: 80px;
+  }
+  
+  .invoice-link {
+    font-size: 0.8rem;
+  }
+  
+  .status {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .modal-content {
+    min-width: 260px;
+    padding: 1rem;
+    margin: 0.5rem;
+  }
 }

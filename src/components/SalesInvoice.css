@@ -1,20 +1,24 @@
 .invoice-container {
   max-width: 900px;
-  margin: 2rem auto;
+  margin: 0;
   background: #fff;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
+
 .invoice-section {
   margin-bottom: 2rem;
 }
+
 .customer-row {
   display: flex;
   gap: 1rem;
   align-items: center;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
+
 .add-customer-btn {
   background: #1976d2;
   color: #fff;
@@ -23,6 +27,11 @@
   border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.add-customer-btn:hover {
+  background: #1565c0;
 }
 .customer-list {
   background: #f7f8fa;
@@ -76,15 +85,27 @@
   background: #f7f8fa;
   border-radius: 8px;
   overflow: hidden;
+  overflow-x: auto;
+  display: block;
 }
+
+.product-table thead, .product-table tbody {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .product-table th, .product-table td {
   padding: 0.7rem 0.5rem;
   border-bottom: 1px solid #e0e0e0;
   text-align: left;
+  word-wrap: break-word;
 }
+
 .product-table th {
   background: #e3e6ee;
   color: #1a2332;
+  font-weight: 600;
 }
 .add-product-btn {
   background: #1976d2;
@@ -131,4 +152,153 @@
   border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.draft-btn:hover {
+  background: #5d4037;
+}
+
+.create-btn:hover {
+  background: #1b5e20;
+}
+
+/* Responsive Design */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .invoice-container {
+    padding: 1.25rem;
+  }
+  
+  .calc-row {
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .invoice-actions {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .create-btn, .draft-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .invoice-container {
+    padding: 1rem;
+  }
+  
+  .customer-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .add-customer-btn, .add-product-btn {
+    width: 100%;
+    padding: 0.6rem 1rem;
+  }
+  
+  .add-customer-form {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .add-customer-form input {
+    width: 100%;
+    padding: 0.5rem;
+  }
+  
+  .add-customer-form button {
+    width: 100%;
+    padding: 0.5rem;
+  }
+  
+  .product-table {
+    font-size: 0.9rem;
+  }
+  
+  .product-table th, .product-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.85rem;
+  }
+  
+  .calc-row {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .calc-row input, .calc-row select {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.25rem;
+  }
+  
+  .invoice-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .create-btn, .draft-btn {
+    width: 100%;
+    padding: 0.75rem;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .invoice-container {
+    padding: 0.75rem;
+  }
+  
+  .invoice-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .customer-list {
+    max-height: 100px;
+    font-size: 0.9rem;
+  }
+  
+  .customer-item {
+    padding: 0.4rem 0.75rem;
+  }
+  
+  .customer-info {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  .product-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .product-table thead, .product-table tbody {
+    display: table;
+    min-width: 500px;
+  }
+  
+  .product-table th, .product-table td {
+    padding: 0.4rem 0.25rem;
+    font-size: 0.8rem;
+    min-width: 70px;
+  }
+  
+  .add-customer-form input {
+    font-size: 0.9rem;
+  }
+  
+  .calc-row input, .calc-row select {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
 }

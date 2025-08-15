@@ -1,11 +1,12 @@
 .report-container {
   max-width: 1100px;
-  margin: 2rem auto;
+  margin: 0;
   background: #fff;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
+
 .report-controls {
   display: flex;
   gap: 1rem;
@@ -13,12 +14,16 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
 }
+
 .report-controls select, .report-controls input[type="date"], .report-controls .search-box {
   padding: 0.5rem 1rem;
   border-radius: 5px;
   border: 1px solid #bdbdbd;
   font-size: 1rem;
+  min-width: 150px;
+  flex: 1;
 }
+
 .generate-btn {
   background: #1976d2;
   color: #fff;
@@ -27,7 +32,13 @@
   border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
+  transition: background 0.3s ease;
 }
+
+.generate-btn:hover {
+  background: #1565c0;
+}
+
 .export-group button {
   background: #2e7d32;
   color: #fff;
@@ -37,42 +48,194 @@
   font-size: 1rem;
   cursor: pointer;
   margin-right: 0.5rem;
+  transition: background 0.3s ease;
 }
+
+.export-group button:hover {
+  background: #1b5e20;
+}
+
 .export-group button:last-child {
   background: #6d4c41;
 }
+
+.export-group button:last-child:hover {
+  background: #5d4037;
+}
+
 .summary-cards {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 .card {
   background: #e3e6ee;
-  padding: 1.2rem 2rem;
+  padding: 1.2rem 1.5rem;
   border-radius: 8px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #1a2332;
-  min-width: 180px;
+  min-width: 160px;
   text-align: center;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  flex: 1;
 }
+
 .report-table {
   width: 100%;
   border-collapse: collapse;
   background: #f7f8fa;
   border-radius: 8px;
   overflow: hidden;
+  overflow-x: auto;
+  display: block;
 }
+
+.report-table thead, .report-table tbody {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .report-table th, .report-table td {
   padding: 0.7rem 0.5rem;
   border-bottom: 1px solid #e0e0e0;
   text-align: left;
+  word-wrap: break-word;
 }
+
 .report-table th {
   background: #e3e6ee;
   color: #1a2332;
+  font-weight: 600;
 }
+
 .warning-row {
   background: #fff3e0;
   color: #e53935;
+}
+
+/* Responsive Design */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .report-container {
+    padding: 1.25rem;
+  }
+  
+  .summary-cards {
+    gap: 1rem;
+  }
+  
+  .card {
+    min-width: 140px;
+    font-size: 1rem;
+    padding: 1rem 1.25rem;
+  }
+  
+  .report-table th, .report-table td {
+    padding: 0.6rem 0.4rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .report-container {
+    padding: 1rem;
+  }
+  
+  .report-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .report-controls select, 
+  .report-controls input[type="date"], 
+  .report-controls .search-box,
+  .generate-btn {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: 0.5rem;
+  }
+  
+  .export-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .export-group button {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+  
+  .summary-cards {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .card {
+    min-width: unset;
+    font-size: 0.95rem;
+    padding: 0.875rem 1rem;
+  }
+  
+  .report-table {
+    font-size: 0.9rem;
+  }
+  
+  .report-table th, .report-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .report-container {
+    padding: 0.75rem;
+  }
+  
+  .report-controls select, 
+  .report-controls input[type="date"], 
+  .report-controls .search-box {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.75rem;
+  }
+  
+  .generate-btn {
+    font-size: 0.9rem;
+    padding: 0.7rem 1rem;
+  }
+  
+  .export-group button {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.875rem;
+  }
+  
+  .card {
+    font-size: 0.9rem;
+    padding: 0.75rem 0.875rem;
+  }
+  
+  .report-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .report-table thead, .report-table tbody {
+    display: table;
+    min-width: 500px;
+  }
+  
+  .report-table th, .report-table td {
+    padding: 0.4rem 0.25rem;
+    font-size: 0.8rem;
+    min-width: 80px;
+  }
 }

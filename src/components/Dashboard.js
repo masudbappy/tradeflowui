@@ -9,6 +9,7 @@ import UserManagement from './UserManagement';
 
 const Dashboard = ({ onLogout }) => {
   const [view, setView] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   // Dummy data for demonstration
   const todaySales = 12500;
   const receivables = 35000;
@@ -22,32 +23,49 @@ const Dashboard = ({ onLogout }) => {
 
   return (
     <div className="dashboard-container">
-      <nav className="sidebar">
+      {/* Mobile menu toggle */}
+      <button 
+        className="mobile-menu-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <i className="fas fa-bars"></i>
+      </button>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
+
+      <nav className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
           <h2>TradeFlow</h2>
+          <button 
+            className="sidebar-close"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         <ul className="sidebar-menu">
-          <li className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')}>
+          <li className={view === 'dashboard' ? 'active' : ''} onClick={() => {setView('dashboard'); setSidebarOpen(false);}}>
             <i className="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
           </li>
-          <li className={view === 'inventory' ? 'active' : ''} onClick={() => setView('inventory')}>
+          <li className={view === 'inventory' ? 'active' : ''} onClick={() => {setView('inventory'); setSidebarOpen(false);}}>
             <i className="fas fa-boxes"></i>
             <span>Inventory</span>
           </li>
-          <li className={view === 'sales' ? 'active' : ''} onClick={() => setView('sales')}>
+          <li className={view === 'sales' ? 'active' : ''} onClick={() => {setView('sales'); setSidebarOpen(false);}}>
             <i className="fas fa-shopping-cart"></i>
             <span>Sales</span>
           </li>
-          <li className={view === 'customer' ? 'active' : ''} onClick={() => setView('customer')}>
+          <li className={view === 'customer' ? 'active' : ''} onClick={() => {setView('customer'); setSidebarOpen(false);}}>
             <i className="fas fa-users"></i>
             <span>Customers</span>
           </li>
-          <li className={view === 'report' ? 'active' : ''} onClick={() => setView('report')}>
+          <li className={view === 'report' ? 'active' : ''} onClick={() => {setView('report'); setSidebarOpen(false);}}>
             <i className="fas fa-chart-bar"></i>
             <span>Reports</span>
           </li>
-          <li className={view === 'user' ? 'active' : ''} onClick={() => setView('user')}>
+          <li className={view === 'user' ? 'active' : ''} onClick={() => {setView('user'); setSidebarOpen(false);}}>
             <i className="fas fa-user-cog"></i>
             <span>User Management</span>
           </li>
