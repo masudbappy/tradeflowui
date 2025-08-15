@@ -12,7 +12,8 @@ const today = new Date().toISOString().slice(0, 10);
 
 function Report() {
   const [type, setType] = useState(reportTypes[0]);
-  const [date, setDate] = useState(today);
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
   const [search, setSearch] = useState('');
 
   // Dummy data for demonstration
@@ -34,9 +35,22 @@ function Report() {
   ];
 
   // Filtering logic
-  const filterRows = (rows, keys) => rows.filter(row =>
-    keys.some(key => row[key].toString().toLowerCase().includes(search.toLowerCase()))
-  );
+  const filterRows = (rows, keys) => {
+    return rows.filter(row => {
+      // Text search filter
+      const textMatch = keys.some(key => 
+        row[key].toString().toLowerCase().includes(search.toLowerCase())
+      );
+      
+      // Date range filter
+      const rowDate = new Date(row.date);
+      const fromDateObj = new Date(fromDate);
+      const toDateObj = new Date(toDate);
+      const dateMatch = rowDate >= fromDateObj && rowDate <= toDateObj;
+      
+      return textMatch && dateMatch;
+    });
+  };
 
   // Export logic (dummy)
   const handleExport = (type) => {
@@ -49,16 +63,34 @@ function Report() {
   return (
     <div className="report-container">
       <div className="report-controls">
-        <select value={type} onChange={e => setType(e.target.value)}>
-          {reportTypes.map((rt, idx) => <option key={idx} value={rt}>{rt}</option>)}
-        </select>
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-        <button className="generate-btn">Generate Report</button>
-        <input className="search-box" type="text" placeholder="Search by Customer or Invoice" value={search} onChange={e => setSearch(e.target.value)} />
-        <div className="export-group">
-          <button onClick={() => handleExport('PDF')}>PDF</button>
-          <button onClick={() => handleExport('Excel')}>Excel</button>
-          <button onClick={() => window.print()}>Print</button>
+        {/* First Row: Report Type, Date Range, Generate Button */}
+        <div className="controls-row">
+          <select value={type} onChange={e => setType(e.target.value)} className="report-type-select">
+            {reportTypes.map((rt, idx) => <option key={idx} value={rt}>{rt}</option>)}
+          </select>
+          <div className="date-range">
+            <label>From:</label>
+            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+            <label>To:</label>
+            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} />
+          </div>
+          <button className="generate-btn">Generate Report</button>
+        </div>
+        
+        {/* Second Row: Search and Export Options */}
+        <div className="controls-row">
+          <input 
+            className="search-box" 
+            type="text" 
+            placeholder="Search by Customer, Invoice, or any field..." 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+          />
+          <div className="export-group">
+            <button className="export-btn pdf" onClick={() => handleExport('PDF')}>📄 PDF</button>
+            <button className="export-btn excel" onClick={() => handleExport('Excel')}>📊 Excel</button>
+            <button className="export-btn print" onClick={() => window.print()}>🖨️ Print</button>
+          </div>
         </div>
       </div>
       {/* Report Sections */}
