@@ -22,15 +22,39 @@ const Dashboard = ({ onLogout }) => {
 
   return (
     <div className="dashboard-container">
-      <nav className="dashboard-nav">
-        <ul>
-          <li style={{cursor: 'pointer', fontWeight: view==='dashboard'?'bold':'normal'}} onClick={() => setView('dashboard')}>Dashboard</li>
-          <li style={{cursor: 'pointer', fontWeight: view==='inventory'?'bold':'normal'}} onClick={() => setView('inventory')}>Inventory</li>
-          <li style={{cursor: 'pointer', fontWeight: view==='sales'?'bold':'normal'}} onClick={() => setView('sales')}>Sales</li>
-          <li style={{cursor: 'pointer', fontWeight: view==='customer'?'bold':'normal'}} onClick={() => setView('customer')}>Customers</li>
-          <li style={{cursor: 'pointer', fontWeight: view==='report'?'bold':'normal'}} onClick={() => setView('report')}>Reports</li>
-          <li style={{cursor: 'pointer', fontWeight: view==='user'?'bold':'normal'}} onClick={() => setView('user')}>User Management</li>
-          <li style={{cursor: 'pointer', color: '#e53935'}} onClick={onLogout}>Logout</li>
+      <nav className="sidebar">
+        <div className="sidebar-header">
+          <h2>TradeFlow</h2>
+        </div>
+        <ul className="sidebar-menu">
+          <li className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')}>
+            <i className="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+          </li>
+          <li className={view === 'inventory' ? 'active' : ''} onClick={() => setView('inventory')}>
+            <i className="fas fa-boxes"></i>
+            <span>Inventory</span>
+          </li>
+          <li className={view === 'sales' ? 'active' : ''} onClick={() => setView('sales')}>
+            <i className="fas fa-shopping-cart"></i>
+            <span>Sales</span>
+          </li>
+          <li className={view === 'customer' ? 'active' : ''} onClick={() => setView('customer')}>
+            <i className="fas fa-users"></i>
+            <span>Customers</span>
+          </li>
+          <li className={view === 'report' ? 'active' : ''} onClick={() => setView('report')}>
+            <i className="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </li>
+          <li className={view === 'user' ? 'active' : ''} onClick={() => setView('user')}>
+            <i className="fas fa-user-cog"></i>
+            <span>User Management</span>
+          </li>
+          <li className="logout" onClick={onLogout}>
+            <i className="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </li>
         </ul>
       </nav>
       <div className="dashboard-main">
