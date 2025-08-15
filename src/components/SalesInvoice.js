@@ -24,6 +24,7 @@ function SalesInvoice() {
 
   // Step 3: Payment
   const [discount, setDiscount] = useState(0);
+  const [otherCost, setOtherCost] = useState(0);
   const [amountPaid, setAmountPaid] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
 
@@ -50,6 +51,11 @@ function SalesInvoice() {
     setInvoiceProducts([...invoiceProducts, { name: '', quantity: '', rate: '', total: 0 }]);
   };
 
+  const handleRemoveProductRow = (idx) => {
+    const updated = invoiceProducts.filter((_, index) => index !== idx);
+    setInvoiceProducts(updated);
+  };
+
   const handleProductChange = (idx, field, value) => {
     const updated = [...invoiceProducts];
     if (field === 'name') {
@@ -66,7 +72,7 @@ function SalesInvoice() {
 
   // Calculation logic
   const subtotal = invoiceProducts.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
-  const grandTotal = subtotal - (parseFloat(discount) || 0);
+  const grandTotal = subtotal - (parseFloat(discount) || 0) + (parseFloat(otherCost) || 0);
   const dueAmount = grandTotal - (parseFloat(amountPaid) || 0);
 
   // Print logic
@@ -115,6 +121,7 @@ function SalesInvoice() {
           <div className="calc-row">
             <div>Subtotal: <strong>৳ {subtotal}</strong></div>
             <div>Discount: <strong>৳ {discount}</strong></div>
+            <div>Other Cost: <strong>৳ {otherCost}</strong></div>
             <div>Grand Total: <strong>৳ {grandTotal}</strong></div>
           </div>
           <div className="calc-row">
@@ -177,6 +184,7 @@ function SalesInvoice() {
                   <th>Quantity</th>
                   <th>Rate</th>
                   <th>Total Amount</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -212,6 +220,15 @@ function SalesInvoice() {
                       />
                     </td>
                     <td>৳ {prod.total}</td>
+                    <td>
+                      <button 
+                        className="remove-btn" 
+                        onClick={() => handleRemoveProductRow(idx)}
+                        title="Remove Product"
+                      >
+                        ✕
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -225,6 +242,11 @@ function SalesInvoice() {
               <div>
                 Discount: <input type="number" value={discount} onChange={e => setDiscount(e.target.value)} min="0" />
               </div>
+            </div>
+            <div className="calc-row">
+              <div>
+                Other Cost (Labor/Transport): <input type="number" value={otherCost} onChange={e => setOtherCost(e.target.value)} min="0" />
+              </div>
               <div>Grand Total: <strong>৳ {grandTotal}</strong></div>
             </div>
             <div className="calc-row">
@@ -236,6 +258,8 @@ function SalesInvoice() {
                   {paymentMethods.map((m, idx) => <option key={idx} value={m}>{m}</option>)}
                 </select>
               </div>
+            </div>
+            <div className="calc-row">
               <div>Due Amount: <strong>৳ {dueAmount}</strong></div>
             </div>
             <div className="invoice-actions">
