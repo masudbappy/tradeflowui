@@ -17,14 +17,35 @@ class AuthService {
       }
 
       const data = await response.json();
+      console.log('Login response:', data); // For debugging
+      
+      // Handle your Spring Boot response structure
+      let token, user;
+      
+      // Extract token
+      if (data.token) {
+        token = data.token;
+      } else {
+        throw new Error('No token received from server');
+      }
+
+      // Extract user info from your Spring Boot response
+      user = {
+        id: data.id,
+        username: data.username,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        roles: data.roles,
+        // Add a primary role for easier checking
+        role: data.roles && data.roles.length > 0 ? data.roles[0] : 'USER'
+      };
       
       // Store JWT token and user info in localStorage
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
       
-      return data;
+      return { token, user };
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -62,7 +83,15 @@ class AuthService {
   // Get current user
   getCurrentUser() {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    if (!user || user === 'undefined') {
+      return null;
+    }
+    try {
+      return JSON.parse(user);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
   }
 
   // Get JWT token

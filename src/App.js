@@ -53,9 +53,12 @@ function App() {
     const password = formData.get('password');
 
     try {
-      await authService.login(username, password);
+      console.log('Attempting login with:', { username }); // Don't log password
+      const result = await authService.login(username, password);
+      console.log('Login successful:', result);
       setIsLoggedIn(true);
     } catch (error) {
+      console.error('Login failed:', error);
       setLoginError('Invalid username or password');
     }
   };

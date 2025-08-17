@@ -14,12 +14,18 @@ const Dashboard = ({ onLogout }) => {
   
   // Get current user info on component mount
   useEffect(() => {
-    const user = authService.getCurrentUser();
-    setCurrentUser(user);
+    try {
+      const user = authService.getCurrentUser();
+      console.log('Current user:', user); // For debugging
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      setCurrentUser(null);
+    }
   }, []);
 
   // Check if current user is admin
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN');
+  const isAdmin = currentUser?.roles?.includes('ADMIN') || currentUser?.role === 'ADMIN';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Dummy data for demonstration
   const todaySales = 12500;

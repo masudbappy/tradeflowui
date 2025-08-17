@@ -1,6 +1,6 @@
 import authService from './authService';
 
-const API_BASE_URL = 'http://localhost:9090';
+const API_BASE_URL = process.env.NODE_ENV === 'production' ? 'http://localhost:9090' : '';
 
 class ApiService {
   // Generic API call method
