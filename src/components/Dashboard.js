@@ -1,14 +1,25 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import Inventory from './Inventory';
 import SalesInvoice from './SalesInvoice';
 import CustomerProfile from './CustomerProfile';
 import Report from './Report';
 import UserManagement from './UserManagement';
+import authService from '../services/authService';
 
 const Dashboard = ({ onLogout }) => {
   const [view, setView] = useState('dashboard');
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // Get current user info on component mount
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    setCurrentUser(user);
+  }, []);
+
+  // Check if current user is admin
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Dummy data for demonstration
   const todaySales = 12500;
@@ -110,7 +121,7 @@ const Dashboard = ({ onLogout }) => {
   {view === 'sales' && <SalesInvoice />}
   {view === 'customer' && <CustomerProfile />}
   {view === 'report' && <Report />}
-  {view === 'user' && <UserManagement isAdmin={true} />}
+          {view === 'user' && <UserManagement isAdmin={isAdmin} />}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Inventory.css';
+import apiService from '../services/apiService';
 
 const initialProducts = [
   {
@@ -35,7 +36,8 @@ const initialProducts = [
 const categoryOptions = ['Iron & Steel', 'Aluminum', 'Copper', 'Brass', 'Hardware', 'Tools'];
 
 const Inventory = () => {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -52,6 +54,25 @@ const Inventory = () => {
     date: '',
     productImage: null
   });
+
+  // Load products from API on component mount
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      // Fallback to initial data if API fails
+      setProducts(initialProducts);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openModal = () => {
     setShowModal(true);
@@ -111,22 +132,25 @@ const Inventory = () => {
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (isEditing) {
-      setProducts(products.map(product => 
-        product.id === editingId 
-          ? { ...form, id: editingId }
-          : product
-      ));
-    } else {
-      const newProduct = {
-        ...form,
-        id: Date.now() // Simple ID generation
-      };
-      setProducts([...products, newProduct]);
+    try {
+      if (isEditing) {
+        await apiService.updateProduct(editingId, form);
+        setProducts(products.map(product => 
+          product.id === editingId 
+            ? { ...form, id: editingId }
+            : product
+        ));
+      } else {
+        const newProduct = await apiService.addProduct(form);
+        setProducts([...products, newProduct]);
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert('Error saving product. Please try again.');
     }
-    closeModal();
   };
 
   return (
@@ -134,7 +158,10 @@ const Inventory = () => {
       <div className="inventory-header">
         <button className="add-btn" onClick={openModal}>+ Add New Product</button>
       </div>
-      <table className="inventory-table">
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading products...</div>
+      ) : (
+        <table className="inventory-table">
         <thead>
           <tr>
             <th>Product Name</th>
@@ -171,6 +198,7 @@ const Inventory = () => {
           ))}
         </tbody>
       </table>
+      )}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">

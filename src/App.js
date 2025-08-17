@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
+import authService from './services/authService';
 
 const languageContent = {
   en: {
@@ -24,19 +25,54 @@ const languageContent = {
 function App() {
   const [language, setLanguage] = useState('bn');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loginError, setLoginError] = useState('');
+
+  // Check if user is already authenticated on app load
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (authService.isAuthenticated()) {
+        const isValid = await authService.verifyToken();
+        setIsLoggedIn(isValid);
+      }
+      setIsLoading(false);
+    };
+    checkAuth();
+  }, []);
 
   const changeLanguage = (lang) => {
     setLanguage(lang);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setIsLoggedIn(true);
+    setLoginError('');
+    
+    const formData = new FormData(e.target);
+    const username = formData.get('username');
+    const password = formData.get('password');
+
+    try {
+      await authService.login(username, password);
+      setIsLoggedIn(true);
+    } catch (error) {
+      setLoginError('Invalid username or password');
+    }
   };
 
   const handleLogout = () => {
+    authService.logout();
     setIsLoggedIn(false);
   };
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="App" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   if (isLoggedIn) {
     return <Dashboard onLogout={handleLogout} />;
@@ -55,16 +91,33 @@ function App() {
             <p>{languageContent[language].loginPrompt}</p>
           </div>
           <form id="login-form" onSubmit={handleLogin}>
+            {loginError && (
+              <div style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>
+                {loginError}
+              </div>
+            )}
             <div className="input-group">
               <i className="fas fa-user"></i>
-              <input type="text" placeholder={languageContent[language].usernamePlaceholder} required />
+              <input 
+                type="text" 
+                name="username"
+                placeholder={languageContent[language].usernamePlaceholder} 
+                required 
+              />
             </div>
             <div className="input-group">
               <i className="fas fa-lock"></i>
-              <input type="password" placeholder={languageContent[language].passwordPlaceholder} required />
+              <input 
+                type="password" 
+                name="password"
+                placeholder={languageContent[language].passwordPlaceholder} 
+                required 
+              />
               <i className="fas fa-eye-slash" id="togglePassword"></i>
             </div>
-            <button type="submit" className="login-button">{languageContent[language].loginButton}</button>
+            <button type="submit" className="login-button">
+              {languageContent[language].loginButton}
+            </button>
           </form>
         </div>
         <div className="footer">
