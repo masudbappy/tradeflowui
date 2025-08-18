@@ -1,23 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './UserManagement.css';
+import apiService from '../services/apiService';
 
-const initialUsers = [
-  { name: 'Md. Rahim', username: 'rahim123', role: 'Admin', status: 'Active', lastLogin: '14-08-2025 10:30' },
-  { name: 'Salma Akter', username: 'salma.sales', role: 'Salesperson', status: 'Active', lastLogin: '13-08-2025 18:45' },
-];
+const initialUsers = [];
 
 function UserManagement({ isAdmin = true }) {
   const [users, setUsers] = useState(initialUsers);
+  // Fetch users from server on mount
+  useEffect(() => {
+    apiService.get('/api/admin/users')
+      .then(data => setUsers(data))
+      .catch(() => setUsers([]));
+  }, []);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', username: '', role: 'Salesperson', status: 'Active', lastLogin: '' });
+  const [form, setForm] = useState({ name: '', username: '', role: 'Salesperson', status: 'Active', lastLogin: '', password: '', roles: ['Salesperson'] });
   const [editIdx, setEditIdx] = useState(null);
 
   const openModal = (idx = null) => {
     setEditIdx(idx);
     if (idx !== null) {
-      setForm(users[idx]);
+  setForm({ ...users[idx], password: '', roles: users[idx].roles || [users[idx].role] });
     } else {
-      setForm({ name: '', username: '', role: 'Salesperson', status: 'Active', lastLogin: '' });
+  setForm({ name: '', username: '', role: 'Salesperson', status: 'Active', lastLogin: '', password: '', roles: ['Salesperson'] });
     }
     setShowModal(true);
   };
@@ -27,21 +31,37 @@ function UserManagement({ isAdmin = true }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editIdx !== null) {
-      const updated = [...users];
-      updated[editIdx] = form;
-      setUsers(updated);
-    } else {
-      setUsers([...users, { ...form, lastLogin: '-' }]);
+    try {
+      if (editIdx !== null) {
+        // Edit user
+        const userId = users[editIdx].id;
+        await apiService.put(`/api/admin/users/${userId}`, form);
+        const updatedUsers = await apiService.get('/api/admin/users');
+        setUsers(updatedUsers);
+      } else {
+        // Add user
+        await apiService.post('/api/admin/users', form);
+        const updatedUsers = await apiService.get('/api/admin/users');
+        setUsers(updatedUsers);
+      }
+      closeModal();
+    } catch (error) {
+      alert('Failed to save user.');
     }
-    closeModal();
   };
 
-  const handleDelete = (idx) => {
+  const handleDelete = async (idx) => {
     if (window.confirm('Delete this user?')) {
-      setUsers(users.filter((_, i) => i !== idx));
+      try {
+        const userId = users[idx].id;
+        await apiService.delete(`/api/admin/users/${userId}`);
+        const updatedUsers = await apiService.get('/api/admin/users');
+        setUsers(updatedUsers);
+      } catch (error) {
+        alert('Failed to delete user.');
+      }
     }
   };
 
@@ -60,18 +80,27 @@ function UserManagement({ isAdmin = true }) {
         )}
       </div>
       
-      <div className="users-stats">
-        <div className="stat-card">
-          <div className="stat-number">{users.length}</div>
-          <div className="stat-label">Total Users</div>
+      <div className="users-stats redesigned-stats">
+        <div className="stat-card total-users">
+          <div className="stat-icon">👥</div>
+          <div>
+            <div className="stat-number">{users.length}</div>
+            <div className="stat-label">Total Users</div>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-number">{users.filter(u => u.status === 'Active').length}</div>
-          <div className="stat-label">Active Users</div>
+        <div className="stat-card active-users">
+          <div className="stat-icon">✅</div>
+          <div>
+            <div className="stat-number">{users.filter(u => u.status === 'Active').length}</div>
+            <div className="stat-label">Active Users</div>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-number">{users.filter(u => u.role === 'Admin').length}</div>
-          <div className="stat-label">Administrators</div>
+        <div className="stat-card admin-users">
+          <div className="stat-icon">👑</div>
+          <div>
+            <div className="stat-number">{users.filter(u => u.role === 'Admin').length}</div>
+            <div className="stat-label">Administrators</div>
+          </div>
         </div>
       </div>
 
@@ -156,11 +185,33 @@ function UserManagement({ isAdmin = true }) {
                   />
                 </div>
                 <div className="form-group">
+                  <label>🔒 Password</label>
+                  <input 
+                    name="password" 
+                    type="password"
+                    value={form.password} 
+                    onChange={handleChange} 
+                    placeholder="Set password"
+                    required 
+                  />
+                </div>
+                <div className="form-group">
                   <label>🏷️ Role</label>
                   <select name="role" value={form.role} onChange={handleChange} required>
                     <option value="Admin">👑 Admin</option>
                     <option value="Salesperson">💼 Salesperson</option>
                   </select>
+                </div>
+                <div className="form-group">
+                  <label>📧 Email</label>
+                  <input 
+                    name="email" 
+                    type="email"
+                    value={form.email || ''}
+                    onChange={handleChange}
+                    placeholder="Enter email address"
+                    required
+                  />
                 </div>
                 <div className="form-group">
                   <label>📊 Status</label>
