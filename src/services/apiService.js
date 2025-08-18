@@ -16,8 +16,12 @@ class ApiService {
       ...options,
     };
 
+    console.log('Making API call:', { url, config }); // Debug log
+
     try {
       const response = await fetch(url, config);
+      
+      console.log('API response status:', response.status, response.statusText); // Debug log
       
       // Handle unauthorized responses
       if (response.status === 401) {
@@ -27,12 +31,29 @@ class ApiService {
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error message from response body
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorBody = await response.text();
+          console.log('Error response body:', errorBody);
+          if (errorBody) {
+            errorMessage = `${errorMessage} - ${errorBody}`;
+          }
+        } catch (e) {
+          // Ignore errors when trying to read error body
+        }
+        throw new Error(errorMessage);
       }
 
-      return await response.json();
+      const responseData = await response.json();
+      console.log('API response data:', responseData); // Debug log
+      return responseData;
     } catch (error) {
-      console.error('API call error:', error);
+      console.error('API call error details:', {
+        url,
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -121,19 +142,19 @@ class ApiService {
 
   // User management API calls
   async getUsers() {
-    return this.get('/api/users');
+    return this.get('/api/admin/users');
   }
 
   async addUser(user) {
-    return this.post('/api/users', user);
+    return this.post('/api/admin/users', user);
   }
 
   async updateUser(id, user) {
-    return this.put(`/api/users/${id}`, user);
+    return this.put(`/api/admin/users/${id}`, user);
   }
 
   async deleteUser(id) {
-    return this.delete(`/api/users/${id}`);
+    return this.delete(`/api/admin/users/${id}`);
   }
 }
 

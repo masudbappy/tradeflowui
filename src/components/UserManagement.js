@@ -8,47 +8,151 @@ function UserManagement({ isAdmin = true }) {
   const [users, setUsers] = useState(initialUsers);
   // Fetch users from server on mount
   useEffect(() => {
-    apiService.get('/api/admin/users')
-      .then(data => setUsers(data))
-      .catch(() => setUsers([]));
+    const fetchUsers = async () => {
+      try {
+        const data = await apiService.get('/api/admin/users');
+        console.log('Fetched users:', data); // For debugging
+        setUsers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setUsers([]); // Set empty array on error
+      }
+    };
+    
+    fetchUsers();
   }, []);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', username: '', role: 'Salesperson', status: 'Active', lastLogin: '', password: '', roles: ['Salesperson'] });
+  const [form, setForm] = useState({ 
+    name: '', 
+    username: '', 
+    email: '', 
+    role: 'Salesperson', 
+    status: 'Active', 
+    lastLogin: '', 
+    password: '', 
+    roles: ['Salesperson'] 
+  });
   const [editIdx, setEditIdx] = useState(null);
 
   const openModal = (idx = null) => {
     setEditIdx(idx);
     if (idx !== null) {
-  setForm({ ...users[idx], password: '', roles: users[idx].roles || [users[idx].role] });
+      // Edit mode - populate form with existing user data
+      const user = users[idx];
+      setForm({ 
+        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
+        username: user.username || '',
+        email: user.email || '', 
+        password: '', // Don't pre-fill password for security
+        role: user.role || user.roles?.[0] || 'Salesperson', // Get first role or default
+        roles: user.roles || [user.role] || ['Salesperson'], // Ensure roles is an array
+        status: user.status === true ? 'Active' : user.status === false ? 'Inactive' : user.status || 'Active',
+        lastLogin: user.lastLogin || '-'
+      });
     } else {
-  setForm({ name: '', username: '', role: 'Salesperson', status: 'Active', lastLogin: '', password: '', roles: ['Salesperson'] });
+      // Add mode - reset form to defaults
+      setForm({ 
+        name: '', 
+        username: '', 
+        email: '', 
+        role: 'Salesperson', 
+        status: 'Active', 
+        lastLogin: '', 
+        password: '', 
+        roles: ['Salesperson'] 
+      });
     }
     setShowModal(true);
   };
   const closeModal = () => setShowModal(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'role') {
+      // When role changes, update both role and roles array
+      setForm({ 
+        ...form, 
+        [name]: value,
+        roles: [value] // Convert single role to array for API
+      });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+    
+    console.log('Form data before submission:', form); // Debug log
+    
     try {
       if (editIdx !== null) {
-        // Edit user
+        // Edit user - prepare update payload
+        const updatePayload = {
+          username: form.username,
+          email: form.email,
+          roles: form.roles,
+          status: form.status === 'Active' // Convert to boolean
+        };
+        // Only include password if it's provided
+        if (form.password && form.password.trim() !== '') {
+          updatePayload.password = form.password;
+        }
+        
+        console.log('Updating user with payload:', updatePayload);
+        
         const userId = users[editIdx].id;
-        await apiService.put(`/api/admin/users/${userId}`, form);
+        const response = await apiService.put(`/api/admin/users/${userId}`, updatePayload);
+        console.log('Update response:', response);
+        
+        // Refresh user list
         const updatedUsers = await apiService.get('/api/admin/users');
-        setUsers(updatedUsers);
+        setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
       } else {
-        // Add user
-        await apiService.post('/api/admin/users', form);
+        // Add user - prepare payload according to your API requirements
+        const newUserPayload = {
+          username: form.username.trim(),
+          password: form.password.trim(),
+          roles: form.roles, // Array of roles like ["Admin"] or ["Salesperson"]
+          email: form.email.trim(),
+          status: form.status === 'Active' // Convert string to boolean
+        };
+        
+        console.log('Creating user with payload:', newUserPayload);
+        
+        // Validate required fields
+        if (!newUserPayload.username || !newUserPayload.password || !newUserPayload.email) {
+          throw new Error('Username, password, and email are required');
+        }
+        
+        const response = await apiService.post('/api/admin/users', newUserPayload);
+        console.log('Create response:', response);
+        
+        // Refresh user list to show the new user
         const updatedUsers = await apiService.get('/api/admin/users');
-        setUsers(updatedUsers);
+        console.log('Updated users list:', updatedUsers);
+        setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
       }
       closeModal();
+      
+      // Show success message
+      alert(editIdx !== null ? 'User updated successfully!' : 'User created successfully!');
+      
     } catch (error) {
-      alert('Failed to save user.');
+      console.error('Detailed error saving user:', error);
+      
+      // Extract more specific error message
+      let errorMessage = 'Failed to save user.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response) {
+        errorMessage = `Server error: ${error.response.status} - ${error.response.statusText}`;
+      } else if (error.toString().includes('fetch')) {
+        errorMessage = 'Network error. Please check if the server is running on port 9090.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -91,14 +195,14 @@ function UserManagement({ isAdmin = true }) {
         <div className="stat-card active-users">
           <div className="stat-icon">✅</div>
           <div>
-            <div className="stat-number">{users.filter(u => u.status === 'Active').length}</div>
+            <div className="stat-number">{users.filter(u => u.status === 'Active' || u.status === true).length}</div>
             <div className="stat-label">Active Users</div>
           </div>
         </div>
         <div className="stat-card admin-users">
           <div className="stat-icon">👑</div>
           <div>
-            <div className="stat-number">{users.filter(u => u.role === 'Admin').length}</div>
+            <div className="stat-number">{users.filter(u => u.role === 'Admin' || u.roles?.includes('Admin') || u.roles?.includes('ADMIN')).length}</div>
             <div className="stat-label">Administrators</div>
           </div>
         </div>
@@ -117,26 +221,26 @@ function UserManagement({ isAdmin = true }) {
           </thead>
           <tbody>
             {users.map((user, idx) => (
-              <tr key={idx}>
+              <tr key={user.id || idx}>
                 <td>
                   <div className="user-info">
                     <div className="user-avatar">
-                      {user.name.charAt(0).toUpperCase()}
+                      {(user.name || user.username || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div className="user-details">
-                      <div className="user-name">{user.name}</div>
-                      <div className="user-username">@{user.username}</div>
+                      <div className="user-name">{user.name || user.firstName + ' ' + user.lastName || 'N/A'}</div>
+                      <div className="user-username">@{user.username || 'unknown'}</div>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <span className={`role-badge ${user.role.toLowerCase()}`}>
-                    {user.role}
+                  <span className={`role-badge ${(user.role || user.roles?.[0] || 'user').toLowerCase()}`}>
+                    {user.role || user.roles?.[0] || 'User'}
                   </span>
                 </td>
                 <td>
-                  <span className={`status-badge ${user.status.toLowerCase()}`}>
-                    {user.status}
+                  <span className={`status-badge ${(user.status || 'active').toString().toLowerCase()}`}>
+                    {user.status === true ? 'Active' : user.status === false ? 'Inactive' : user.status || 'Active'}
                   </span>
                 </td>
                 <td>{user.lastLogin}</td>
@@ -191,8 +295,8 @@ function UserManagement({ isAdmin = true }) {
                     type="password"
                     value={form.password} 
                     onChange={handleChange} 
-                    placeholder="Set password"
-                    required 
+                    placeholder={editIdx !== null ? "Leave empty to keep current password" : "Set password"}
+                    required={editIdx === null} // Only required for new users
                   />
                 </div>
                 <div className="form-group">
