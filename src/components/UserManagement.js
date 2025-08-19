@@ -23,14 +23,14 @@ function UserManagement({ isAdmin = true }) {
   }, []);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ 
-    name: '', 
+    fullName: '', 
     username: '', 
     email: '', 
-    role: 'Salesperson', 
-    status: 'Active', 
+    role: 'ADMIN', 
+    status: true, 
     lastLogin: '', 
     password: '', 
-    roles: ['Salesperson'] 
+    roles: ['ADMIN'] 
   });
   const [editIdx, setEditIdx] = useState(null);
 
@@ -40,26 +40,26 @@ function UserManagement({ isAdmin = true }) {
       // Edit mode - populate form with existing user data
       const user = users[idx];
       setForm({ 
-        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
+        fullName: user.fullName || user.name || user.username || '',
         username: user.username || '',
         email: user.email || '', 
         password: '', // Don't pre-fill password for security
-        role: user.role || user.roles?.[0] || 'Viewer', // Get first role or default
-        roles: user.roles || [user.role] || ['Viewer'], // Ensure roles is an array
-        status: user.status === true ? 'Active' : user.status === false ? 'Inactive' : user.status || 'Active',
-        lastLogin: user.lastLogin || '-'
+        role: user.roles?.[0] || user.role || 'ADMIN', // Get first role or default
+        roles: user.roles || [user.role] || ['ADMIN'], // Ensure roles is an array
+        status: user.enabled === true,
+        lastLogin: user.lastLogin || user.updatedAt || user.createdAt || '-'
       });
     } else {
       // Add mode - reset form to defaults
       setForm({ 
-        name: '', 
+        fullName: '', 
         username: '', 
         email: '', 
-        role: 'Salesperson', 
-        status: 'Active', 
+        role: 'ADMIN', 
+        status: true, 
         lastLogin: '', 
         password: '', 
-        roles: ['Salesperson'] 
+        roles: ['ADMIN'] 
       });
     }
     setShowModal(true);
@@ -69,12 +69,13 @@ function UserManagement({ isAdmin = true }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'role') {
-      // When role changes, update both role and roles array
       setForm({ 
         ...form, 
-        [name]: value,
-        roles: [value] // Convert single role to array for API
+        role: value,
+        roles: [value]
       });
+    } else if (name === 'status') {
+      setForm({ ...form, status: value === 'true' });
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -89,12 +90,12 @@ function UserManagement({ isAdmin = true }) {
       if (editIdx !== null) {
         // Edit user - prepare update payload
         const updatePayload = {
+          fullName: form.fullName,
           username: form.username,
           email: form.email,
           roles: form.roles,
-          status: form.status === 'Active' // Convert to boolean
+          enabled: form.status,
         };
-        // Only include password if it's provided
         if (form.password && form.password.trim() !== '') {
           updatePayload.password = form.password;
         }
@@ -111,11 +112,12 @@ function UserManagement({ isAdmin = true }) {
       } else {
         // Add user - prepare payload according to your API requirements
         const newUserPayload = {
+          fullName: form.fullName.trim(),
           username: form.username.trim(),
           password: form.password.trim(),
-          roles: form.roles, // Array of roles like ["Admin"] or ["Salesperson"]
+          roles: form.roles,
           email: form.email.trim(),
-          status: form.status === 'Active' // Convert string to boolean
+          enabled: form.status,
         };
         
         console.log('Creating user with payload:', newUserPayload);
@@ -195,7 +197,7 @@ function UserManagement({ isAdmin = true }) {
         <div className="stat-card active-users">
           <div className="stat-icon">✅</div>
           <div>
-            <div className="stat-number">{users.filter(u => u.status === 'Active' || u.status === true).length}</div>
+            <div className="stat-number">{users.filter(u => u.enabled === 'Active' || u.enabled === true).length}</div>
             <div className="stat-label">Active Users</div>
           </div>
         </div>
@@ -239,8 +241,8 @@ function UserManagement({ isAdmin = true }) {
                   </span>
                 </td>
                 <td>
-                  <span className={`status-badge ${(user.status || 'active').toString().toLowerCase()}`}>
-                    {user.status === true ? 'Active' : user.status === false ? 'Inactive' : user.status || 'Active'}
+                  <span className={`status-badge ${(user.enabled === false ? 'inactive' : user.enabled === true ? 'active' : (user.status === false ? 'inactive' : 'active'))}`}>
+                    {user.enabled === false ? 'Inactive' : user.enabled === true ? 'Active' : (user.status === false ? 'Inactive' : 'Active')}
                   </span>
                 </td>
                 <td>{user.lastLogin}</td>
@@ -271,8 +273,8 @@ function UserManagement({ isAdmin = true }) {
                 <div className="form-group">
                   <label>👤 Full Name</label>
                   <input 
-                    name="name" 
-                    value={form.name} 
+                    name="fullName" 
+                    value={form.fullName} 
                     onChange={handleChange} 
                     placeholder="Enter full name"
                     required 
@@ -302,10 +304,10 @@ function UserManagement({ isAdmin = true }) {
                 <div className="form-group">
                   <label>🏷️ Role</label>
                   <select name="role" value={form.role} onChange={handleChange} required>
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
-                    <option value="staff">Staff</option>
-                    <option value="viewer">Viewer</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="STAFF">Staff</option>
+                    <option value="VIEWER">Viewer</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -321,7 +323,7 @@ function UserManagement({ isAdmin = true }) {
                 </div>
                 <div className="form-group">
                   <label>📊 Status</label>
-                  <select name="status" value={form.status} onChange={handleChange} required>
+                  <select name="status" value={form.status ? 'true' : 'false'} onChange={handleChange} required>
                     <option value="true">✅ Active</option>
                     <option value="false">❌ Inactive</option>
                   </select>
