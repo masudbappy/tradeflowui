@@ -44,8 +44,8 @@ function UserManagement({ isAdmin = true }) {
         username: user.username || '',
         email: user.email || '', 
         password: '', // Don't pre-fill password for security
-        role: user.role || user.roles?.[0] || 'Salesperson', // Get first role or default
-        roles: user.roles || [user.role] || ['Salesperson'], // Ensure roles is an array
+        role: user.role || user.roles?.[0] || 'Viewer', // Get first role or default
+        roles: user.roles || [user.role] || ['Viewer'], // Ensure roles is an array
         status: user.status === true ? 'Active' : user.status === false ? 'Inactive' : user.status || 'Active',
         lastLogin: user.lastLogin || '-'
       });
@@ -228,8 +228,8 @@ function UserManagement({ isAdmin = true }) {
                       {(user.name || user.username || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div className="user-details">
-                      <div className="user-name">{user.name || user.firstName + ' ' + user.lastName || 'N/A'}</div>
-                      <div className="user-username">@{user.username || 'unknown'}</div>
+                      <div className="user-name">{user.username || user.fullName || 'N/A'}</div>
+                      <div className="user-username">{user.email || 'unknown'}</div>
                     </div>
                   </div>
                 </td>
@@ -302,8 +302,10 @@ function UserManagement({ isAdmin = true }) {
                 <div className="form-group">
                   <label>🏷️ Role</label>
                   <select name="role" value={form.role} onChange={handleChange} required>
-                    <option value="Admin">👑 Admin</option>
-                    <option value="Salesperson">💼 Salesperson</option>
+                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
+                    <option value="staff">Staff</option>
+                    <option value="viewer">Viewer</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -320,8 +322,8 @@ function UserManagement({ isAdmin = true }) {
                 <div className="form-group">
                   <label>📊 Status</label>
                   <select name="status" value={form.status} onChange={handleChange} required>
-                    <option value="Active">✅ Active</option>
-                    <option value="Inactive">❌ Inactive</option>
+                    <option value="true">✅ Active</option>
+                    <option value="false">❌ Inactive</option>
                   </select>
                 </div>
               </div>
