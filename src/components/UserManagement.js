@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import './UserManagement.css';
-import apiService from '../services/apiService';
+  import React, { useState, useEffect } from 'react';
+  import './UserManagement.css';
+  import apiService from '../services/apiService';
 
-const initialUsers = [];
+  const initialUsers = [];
 
 function UserManagement({ isAdmin = true }) {
   const [users, setUsers] = useState(initialUsers);
@@ -23,14 +23,14 @@ function UserManagement({ isAdmin = true }) {
   }, []);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ 
-    fullName: '', 
-    username: '', 
-    email: '', 
-    role: 'ADMIN', 
-    status: true, 
-    lastLogin: '', 
-    password: '', 
-    roles: ['ADMIN'] 
+    fullName: '',
+    username: '',
+    email: '',
+    role: 'ADMIN',
+    status: true,
+    lastLogin: '',
+    password: '',
+    roles: ['ADMIN']
   });
   const [editIdx, setEditIdx] = useState(null);
 
@@ -52,14 +52,14 @@ function UserManagement({ isAdmin = true }) {
     } else {
       // Add mode - reset form to defaults
       setForm({ 
-        fullName: '', 
-        username: '', 
-        email: '', 
-        role: 'ADMIN', 
-        status: true, 
-        lastLogin: '', 
-        password: '', 
-        roles: ['ADMIN'] 
+        fullName: '',
+        username: '',
+        email: '',
+        role: 'ADMIN',
+        status: true,
+        lastLogin: '',
+        password: '',
+        roles: ['ADMIN']
       });
     }
     setShowModal(true);
@@ -119,17 +119,19 @@ function UserManagement({ isAdmin = true }) {
           email: form.email.trim(),
           enabled: form.status,
         };
-        
         console.log('Creating user with payload:', newUserPayload);
-        
         // Validate required fields
         if (!newUserPayload.username || !newUserPayload.password || !newUserPayload.email) {
           throw new Error('Username, password, and email are required');
         }
-        
-        const response = await apiService.post('/api/admin/users', newUserPayload);
-        console.log('Create response:', response);
-        
+        let response;
+        try {
+          response = await apiService.post('/api/admin/users', newUserPayload);
+          console.log('Create response:', response);
+        } catch (err) {
+          // If response is not valid JSON, just log and continue
+          console.warn('Non-JSON response from backend:', err);
+        }
         // Refresh user list to show the new user
         const updatedUsers = await apiService.get('/api/admin/users');
         console.log('Updated users list:', updatedUsers);
@@ -241,8 +243,8 @@ function UserManagement({ isAdmin = true }) {
                   </span>
                 </td>
                 <td>
-                  <span className={`status-badge ${(user.enabled === false ? 'inactive' : user.enabled === true ? 'active' : (user.status === false ? 'inactive' : 'active'))}`}>
-                    {user.enabled === false ? 'Inactive' : user.enabled === true ? 'Active' : (user.status === false ? 'Inactive' : 'Active')}
+                  <span className={`status-badge ${(user.enabled === false ? 'inactive' : user.enabled === true ? 'active' : (user.enabled === false ? 'inactive' : 'active'))}`}>
+                    {user.enabled === false ? 'Inactive' : user.enabled === true ? 'Active' : (user.enabled === false ? 'Inactive' : 'Active')}
                   </span>
                 </td>
                 <td>{user.lastLogin}</td>
@@ -290,17 +292,38 @@ function UserManagement({ isAdmin = true }) {
                     required 
                   />
                 </div>
-                <div className="form-group">
-                  <label>🔒 Password</label>
-                  <input 
-                    name="password" 
-                    type="password"
-                    value={form.password} 
-                    onChange={handleChange} 
-                    placeholder={editIdx !== null ? "Leave empty to keep current password" : "Set password"}
-                    required={editIdx === null} // Only required for new users
-                  />
-                </div>
+                {editIdx === null ? (
+                  <div className="form-group">
+                    <label>🔒 Password</label>
+                    <input 
+                      name="password" 
+                      type="password"
+                      value={form.password} 
+                      onChange={handleChange} 
+                      placeholder="Set password"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label>🔒 Reset Password</label>
+                    <button
+                      type="button"
+                      className="reset-password-btn"
+                      onClick={async () => {
+                        const userId = users[editIdx].id;
+                        try {
+                          await apiService.post(`/users/${userId}/reset-password`, {});
+                          alert('Password reset successfully!');
+                        } catch (err) {
+                          alert('Failed to reset password.');
+                        }
+                      }}
+                    >
+                      Resent Password
+                    </button>
+                  </div>
+                )}
                 <div className="form-group">
                   <label>🏷️ Role</label>
                   <select name="role" value={form.role} onChange={handleChange} required>
