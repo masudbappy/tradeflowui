@@ -1,10 +1,12 @@
-  import React, { useState, useEffect } from 'react';
-  import './UserManagement.css';
-  import apiService from '../services/apiService';
+import React, { useState, useEffect } from 'react';
+import './UserManagement.css';
+import apiService from '../services/apiService';
 
-  const initialUsers = [];
+const initialUsers = [];
 
 function UserManagement({ isAdmin = true }) {
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [users, setUsers] = useState(initialUsers);
   // Fetch users from server on mount
   useEffect(() => {
@@ -310,20 +312,59 @@ function UserManagement({ isAdmin = true }) {
                     <button
                       type="button"
                       className="reset-password-btn"
-                      onClick={async () => {
-                        const userId = users[editIdx].id;
-                        try {
-                          await apiService.post(`/users/${userId}/reset-password`, {});
-                          alert('Password reset successfully!');
-                        } catch (err) {
-                          alert('Failed to reset password.');
-                        }
-                      }}
+                      onClick={() => setShowResetModal(true)}
                     >
-                      Resent Password
+                      Reset Password
                     </button>
                   </div>
                 )}
+      {showResetModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 400, margin: '10% auto', padding: '2rem' }}>
+            <div className="modal-header">
+              <h2>🔒 Reset Password</h2>
+              <button className="modal-close" onClick={() => setShowResetModal(false)}>✕</button>
+            </div>
+            <div className="form-group">
+              <label>New Password</label>
+              <input
+                type="password"
+                placeholder="Enter new password"
+                value={resetPasswordValue}
+                onChange={e => setResetPasswordValue(e.target.value)}
+                className="reset-password-input"
+                required
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="save-btn"
+                onClick={async () => {
+                  const userId = users[editIdx].id;
+                  if (!resetPasswordValue || resetPasswordValue.trim().length < 4) {
+                    alert('Please enter a new password (min 4 characters).');
+                    return;
+                  }
+                  try {
+                    await apiService.put(`/api/admin/users/${userId}/reset-password`, { newPassword: resetPasswordValue });
+                    alert('Password reset successfully!');
+                    setResetPasswordValue('');
+                    setShowResetModal(false);
+                  } catch (err) {
+                    alert('Failed to reset password.');
+                  }
+                }}
+              >
+                Confirm
+              </button>
+              <button type="button" className="cancel-btn" onClick={() => setShowResetModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
                 <div className="form-group">
                   <label>🏷️ Role</label>
                   <select name="role" value={form.role} onChange={handleChange} required>
