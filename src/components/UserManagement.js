@@ -25,9 +25,7 @@ function UserManagement({ isAdmin = true }) {
   }, []);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ 
-    fullName: '',
     username: '',
-    email: '',
     role: 'ADMIN',
     status: true,
     lastLogin: '',
@@ -42,9 +40,7 @@ function UserManagement({ isAdmin = true }) {
       // Edit mode - populate form with existing user data
       const user = users[idx];
       setForm({ 
-        fullName: user.fullName || user.name || user.username || '',
         username: user.username || '',
-        email: user.email || '', 
         password: '', // Don't pre-fill password for security
         role: user.roles?.[0] || user.role || 'ADMIN', // Get first role or default
         roles: user.roles || [user.role] || ['ADMIN'], // Ensure roles is an array
@@ -54,9 +50,7 @@ function UserManagement({ isAdmin = true }) {
     } else {
       // Add mode - reset form to defaults
       setForm({ 
-        fullName: '',
         username: '',
-        email: '',
         role: 'ADMIN',
         status: true,
         lastLogin: '',
@@ -92,9 +86,7 @@ function UserManagement({ isAdmin = true }) {
       if (editIdx !== null) {
         // Edit user - prepare update payload
         const updatePayload = {
-          fullName: form.fullName,
           username: form.username,
-          email: form.email,
           roles: form.roles,
           enabled: form.status,
         };
@@ -114,17 +106,15 @@ function UserManagement({ isAdmin = true }) {
       } else {
         // Add user - prepare payload according to your API requirements
         const newUserPayload = {
-          fullName: form.fullName.trim(),
           username: form.username.trim(),
           password: form.password.trim(),
           roles: form.roles,
-          email: form.email.trim(),
           enabled: form.status,
         };
         console.log('Creating user with payload:', newUserPayload);
         // Validate required fields
-        if (!newUserPayload.username || !newUserPayload.password || !newUserPayload.email) {
-          throw new Error('Username, password, and email are required');
+        if (!newUserPayload.username || !newUserPayload.password) {
+          throw new Error('Username and password are required');
         }
         let response;
         try {
@@ -231,11 +221,10 @@ function UserManagement({ isAdmin = true }) {
                 <td>
                   <div className="user-info">
                     <div className="user-avatar">
-                      {(user.name || user.username || 'U').charAt(0).toUpperCase()}
+                      {(user.username || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div className="user-details">
-                      <div className="user-name">{user.username || user.fullName || 'N/A'}</div>
-                      <div className="user-username">{user.email || 'unknown'}</div>
+                      <div className="user-name">{user.username || 'N/A'}</div>
                     </div>
                   </div>
                 </td>
@@ -275,17 +264,7 @@ function UserManagement({ isAdmin = true }) {
             <form onSubmit={handleSave} className="modal-form">
               <div className="form-grid">
                 <div className="form-group">
-                  <label>👤 Full Name</label>
-                  <input 
-                    name="fullName" 
-                    value={form.fullName} 
-                    onChange={handleChange} 
-                    placeholder="Enter full name"
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>📧 Username</label>
+                  <label> Username</label>
                   <input 
                     name="username" 
                     value={form.username} 
@@ -373,17 +352,6 @@ function UserManagement({ isAdmin = true }) {
                     <option value="STAFF">Staff</option>
                     <option value="VIEWER">Viewer</option>
                   </select>
-                </div>
-                <div className="form-group">
-                  <label>📧 Email</label>
-                  <input 
-                    name="email" 
-                    type="email"
-                    value={form.email || ''}
-                    onChange={handleChange}
-                    placeholder="Enter email address"
-                    required
-                  />
                 </div>
                 <div className="form-group">
                   <label>📊 Status</label>
