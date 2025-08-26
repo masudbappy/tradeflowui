@@ -1,39 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Inventory.css';
-import apiService from '../services/apiService';
+import authService from '../services/authService';
 
-const initialProducts = [
-  {
-    id: 1,
-    productName: 'Angle',
-    quantity: 5.2,
-    unit: 'ton',
-    category: 'Iron & Steel',
-    type: 'MS',
-    purchasePrice: 45000,
-    sellPrice: 50000,
-    warehouse: 'Main Warehouse',
-    supplierName: 'ABC Steel Supplier',
-    date: '2024-01-15',
-    productImage: null
-  },
-  {
-    id: 2,
-    productName: 'Flat Bar',
-    quantity: 3.8,
-    unit: 'ton',
-    category: 'Iron & Steel',
-    type: 'SS',
-    purchasePrice: 65000,
-    sellPrice: 72000,
-    warehouse: 'Secondary Warehouse',
-    supplierName: 'Steel World Ltd',
-    date: '2024-01-20',
-    productImage: null
-  }
-];
+const initialProducts = [];
 
-const categoryOptions = ['Iron & Steel', 'Aluminum', 'Copper', 'Brass', 'Hardware', 'Tools'];
+// Dynamic options - will be populated from user input and backend
+let categoryOptions = [];
+let typeOptions = [];
+let warehouseOptions = [];
+let supplierOptions = [];
 
 const Inventory = () => {
   const [products, setProducts] = useState([]);
@@ -42,28 +17,69 @@ const Inventory = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
-    productName: '',
-    quantity: '',
+    name: '',
+    productCode: '',
+    stock: '',
     unit: '',
     category: '',
     type: '',
-    purchasePrice: '',
-    sellPrice: '',
+    buyingPrice: '',
+    sellingPrice: '',
     warehouse: '',
-    supplierName: '',
-    date: '',
-    productImage: null
+    supplier: '',
+    date: ''
   });
 
-  // Load products from API on component mount
-  useEffect(() => {
-    loadProducts();
-  }, []);
+  // Custom API call for products service (port 8081)
+  const productsApiCall = async (endpoint, options = {}) => {
+    const url = `http://localhost:8081${endpoint}`;
+    
+    const config = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeader(),
+      },
+      ...options,
+    };
 
-  const loadProducts = async () => {
+    console.log('Making products API call:', { url, config });
+
+    const response = await fetch(url, config);
+    
+    console.log('Products API response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorBody = await response.text();
+        console.log('Products API error response body:', errorBody);
+        if (errorBody) {
+          errorMessage = `${errorMessage} - ${errorBody}`;
+        }
+      } catch (e) {
+        // Ignore errors when trying to read error body
+      }
+      const error = new Error(errorMessage);
+      error.response = { status: response.status, statusText: response.statusText, data: null };
+      throw error;
+    }
+
+    return await response.json();
+  };
+
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiService.getProducts();
+      
+      // Check if user is authenticated
+      if (!authService.isAuthenticated()) {
+        console.error('User not authenticated');
+        setProducts(initialProducts);
+        return;
+      }
+      
+      const data = await productsApiCall('/api/products');
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -72,42 +88,47 @@ const Inventory = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load products from API on component mount
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const openModal = () => {
     setShowModal(true);
     setIsEditing(false);
     setForm({
-      productName: '',
-      quantity: '',
+      name: '',
+      productCode: '',
+      stock: '',
       unit: '',
       category: '',
       type: '',
-      purchasePrice: '',
-      sellPrice: '',
+      buyingPrice: '',
+      sellingPrice: '',
       warehouse: '',
-      supplierName: '',
-      date: '',
-      productImage: null
+      supplier: '',
+      date: ''
     });
   };
 
   const openEditModal = (product) => {
     setShowModal(true);
     setIsEditing(true);
-    setEditingId(product.id);
+    setEditingId(product.productId);
     setForm({
-      productName: product.productName,
-      quantity: product.quantity,
+      name: product.name,
+      productCode: product.productCode,
+      stock: product.stock,
       unit: product.unit,
-      category: product.category,
-      type: product.type,
-      purchasePrice: product.purchasePrice,
-      sellPrice: product.sellPrice,
-      warehouse: product.warehouse,
-      supplierName: product.supplierName,
-      date: product.date,
-      productImage: product.productImage
+      category: product.category?.name || '',
+      type: product.typeEntity?.name || '',
+      buyingPrice: product.buyingPrice,
+      sellingPrice: product.sellingPrice,
+      warehouse: product.warehouse?.warehouseName || '',
+      supplier: product.supplier?.name || '',
+      date: product.date
     });
   };
 
@@ -118,38 +139,97 @@ const Inventory = () => {
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm({ ...form, productImage: reader.result });
-      };
-      reader.readAsDataURL(file);
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    
+    // Auto-add new categories, types, warehouses, and suppliers to options
+    if (name === 'category' && value && !categoryOptions.includes(value)) {
+      categoryOptions.push(value);
+    } else if (name === 'type' && value && !typeOptions.includes(value)) {
+      typeOptions.push(value);
+    } else if (name === 'warehouse' && value && !warehouseOptions.includes(value)) {
+      warehouseOptions.push(value);
+    } else if (name === 'supplier' && value && !supplierOptions.includes(value)) {
+      supplierOptions.push(value);
     }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      if (isEditing) {
-        await apiService.updateProduct(editingId, form);
-        setProducts(products.map(product => 
-          product.id === editingId 
-            ? { ...form, id: editingId }
-            : product
-        ));
-      } else {
-        const newProduct = await apiService.addProduct(form);
-        setProducts([...products, newProduct]);
+      // Check if user is authenticated
+      if (!authService.isAuthenticated()) {
+        alert('You must be logged in to save products');
+        return;
       }
+
+      // Validate required fields
+      if (!form.name || !form.productCode || !form.stock || !form.unit || 
+          !form.category || !form.type || !form.buyingPrice || !form.sellingPrice || 
+          !form.warehouse || !form.supplier || !form.date) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      // Create payload matching backend API structure
+      const payload = {
+        name: form.name.trim(),
+        productCode: form.productCode.trim(),
+        stock: parseFloat(form.stock),
+        unit: form.unit.trim(),
+        buyingPrice: parseFloat(form.buyingPrice),
+        sellingPrice: parseFloat(form.sellingPrice),
+        date: form.date,
+        category: { name: form.category.trim() },
+        typeEntity: { name: form.type.trim() },
+        warehouse: { warehouseName: form.warehouse.trim() },
+        supplier: { name: form.supplier.trim() }
+      };
+
+      // Validate numeric values
+      if (isNaN(payload.stock) || isNaN(payload.buyingPrice) || isNaN(payload.sellingPrice)) {
+        alert('Please enter valid numbers for stock, buying price, and selling price');
+        return;
+      }
+
+      console.log('Sending payload:', JSON.stringify(payload, null, 2)); // Debug log
+
+      if (isEditing) {
+        const response = await productsApiCall(`/api/products/${editingId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        console.log('Update response:', response);
+      } else {
+        const response = await productsApiCall('/api/products', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        console.log('Create response:', response);
+      }
+      
+      // Reload products after save
+      await loadProducts();
       closeModal();
+      alert('Product saved successfully!');
     } catch (error) {
-      console.error('Error saving product:', error);
-      alert('Error saving product. Please try again.');
+      console.error('Detailed error saving product:', error);
+      
+      // Extract more specific error message
+      let errorMessage = 'Error saving product. Please try again.';
+      
+      if (error.response) {
+        // Try to get the actual error message from server response
+        const serverMessage = error.response.data?.message || error.response.data?.error || 'Unknown server error';
+        errorMessage = `Server error (${error.response.status}): ${serverMessage}`;
+        console.log('Server response data:', error.response.data);
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.toString().includes('fetch')) {
+        errorMessage = 'Network error. Please check if the server is running on port 8081.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -165,12 +245,12 @@ const Inventory = () => {
         <thead>
           <tr>
             <th>Product Name</th>
-            <th>Quantity</th>
+            <th>Stock</th>
             <th>Unit</th>
             <th>Category</th>
             <th>Type</th>
-            <th>Purchase Price</th>
-            <th>Sell Price</th>
+            <th>Buying Price</th>
+            <th>Selling Price</th>
             <th>Warehouse</th>
             <th>Supplier</th>
             <th>Date</th>
@@ -179,16 +259,16 @@ const Inventory = () => {
         </thead>
         <tbody>
           {products.map((prod) => (
-            <tr key={prod.id}>
-              <td>{prod.productName}</td>
-              <td>{prod.quantity}</td>
+            <tr key={prod.productId}>
+              <td>{prod.name}</td>
+              <td>{prod.stock}</td>
               <td>{prod.unit}</td>
-              <td>{prod.category}</td>
-              <td>{prod.type}</td>
-              <td>৳{prod.purchasePrice?.toLocaleString()}</td>
-              <td>৳{prod.sellPrice?.toLocaleString()}</td>
-              <td>{prod.warehouse}</td>
-              <td>{prod.supplierName}</td>
+              <td>{prod.category?.name}</td>
+              <td>{prod.typeEntity?.name}</td>
+              <td>৳{prod.buyingPrice?.toLocaleString()}</td>
+              <td>৳{prod.sellingPrice?.toLocaleString()}</td>
+              <td>{prod.warehouse?.warehouseName}</td>
+              <td>{prod.supplier?.name}</td>
               <td>{prod.date}</td>
               <td>
                 <button className="edit-btn" onClick={() => openEditModal(prod)}>Edit</button>
@@ -206,60 +286,54 @@ const Inventory = () => {
             <form onSubmit={handleSave} className="modal-form">
               <div className="form-row">
                 <label>Product Name
-                  <input name="productName" value={form.productName} onChange={handleChange} placeholder="e.g., Angle, Flat Bar, Channel" required />
+                  <input name="name" value={form.name} onChange={handleChange} placeholder="e.g., BSRM BAR" required />
                 </label>
-                <label>Quantity
-                  <input name="quantity" type="number" step="0.01" value={form.quantity} onChange={handleChange} placeholder="e.g., 10.5" required />
+                <label>Product Code
+                  <input name="productCode" value={form.productCode} onChange={handleChange} placeholder="e.g., P0001" required />
                 </label>
               </div>
               
               <div className="form-row">
+                <label>Stock Quantity
+                  <input name="stock" type="number" step="0.01" value={form.stock} onChange={handleChange} placeholder="e.g., 101.20" required />
+                </label>
                 <label>Unit
                   <input name="unit" value={form.unit} onChange={handleChange} placeholder="e.g., kg, ton, piece, meter" required />
                 </label>
+              </div>
+
+              <div className="form-row">
                 <label>Category
-                  <select name="category" value={form.category} onChange={handleChange} required>
-                    <option value="">Select Category</option>
-                    {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
+                  <input name="category" value={form.category} onChange={handleChange} placeholder="e.g., FLAT BAR" required />
                 </label>
-              </div>
-
-              <div className="form-row">
                 <label>Type
-                  <input name="type" value={form.type} onChange={handleChange} placeholder="e.g., MS, SS, GI, Aluminum" required />
-                </label>
-                <label>Purchase Price (৳)
-                  <input name="purchasePrice" type="number" step="0.01" value={form.purchasePrice} onChange={handleChange} placeholder="e.g., 45000" required />
+                  <input name="type" value={form.type} onChange={handleChange} placeholder="e.g., 10mm" required />
                 </label>
               </div>
 
               <div className="form-row">
-                <label>Sell Price (৳)
-                  <input name="sellPrice" type="number" step="0.01" value={form.sellPrice} onChange={handleChange} placeholder="e.g., 50000" required />
+                <label>Buying Price (৳)
+                  <input name="buyingPrice" type="number" step="0.01" value={form.buyingPrice} onChange={handleChange} placeholder="e.g., 88" required />
                 </label>
+                <label>Selling Price (৳)
+                  <input name="sellingPrice" type="number" step="0.01" value={form.sellingPrice} onChange={handleChange} placeholder="e.g., 90" required />
+                </label>
+              </div>
+
+              <div className="form-row">
                 <label>Warehouse/Godown
-                  <input name="warehouse" value={form.warehouse} onChange={handleChange} placeholder="e.g., Main Warehouse, Godown A" required />
+                  <input name="warehouse" value={form.warehouse} onChange={handleChange} placeholder="e.g., Godown 1" required />
+                </label>
+                <label>Supplier Name
+                  <input name="supplier" value={form.supplier} onChange={handleChange} placeholder="e.g., Dhaka IRON" required />
                 </label>
               </div>
 
               <div className="form-row">
-                <label>Supplier Name
-                  <input name="supplierName" value={form.supplierName} onChange={handleChange} placeholder="e.g., ABC Steel Supplier" required />
-                </label>
                 <label>Date
                   <input name="date" type="date" value={form.date} onChange={handleChange} required />
                 </label>
               </div>
-
-              <label>Product Image
-                <input name="productImage" type="file" accept="image/*" onChange={handleImageChange} />
-                {form.productImage && (
-                  <div className="image-preview">
-                    <img src={form.productImage} alt="Product Preview" style={{width: '100px', height: '100px', objectFit: 'cover', marginTop: '10px'}} />
-                  </div>
-                )}
-              </label>
 
               <div className="modal-actions">
                 <button type="submit" className="save-btn">{isEditing ? 'Update' : 'Save'}</button>
