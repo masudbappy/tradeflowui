@@ -67,11 +67,6 @@
 }
 
 /* Fix for "In Action" header and buttons alignment */
-.edit-btn, .delete-btn {
-  display: inline-block;
-  white-space: nowrap;
-}
-
 .inventory-table td {
   text-align: center;
   vertical-align: middle;
@@ -85,25 +80,106 @@
 }
 
 .edit-btn, .delete-btn {
-  background: #1976d2;
-  color: #fff;
   border: none;
-  padding: 0.4rem 0.9rem;
-  border-radius: 4px;
-  margin-right: 0.5rem;
-  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: inline-block;
+  white-space: nowrap;
 }
+
+.edit-btn {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: #fff;
+}
+
 .edit-btn:hover {
-  background: #1565c0;
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
+
 .delete-btn {
-  background: #d32f2f;
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: #fff;
 }
+
 .delete-btn:hover {
-  background: #b71c1c;
+  background: linear-gradient(135deg, #d32f2f, #b71c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
+
+/* Action buttons container */
+.inventory-table td:last-child {
+  padding: 0.8rem 0.5rem;
+  white-space: nowrap;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Pagination Styles */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pagination {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pagination-btn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.pagination-btn.active {
+  background: #2e7d32;
+  color: #fff;
+  border-color: #2e7d32;
+}
+
+.pagination-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: #f9f9f9;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -213,9 +289,27 @@
   }
   
   .edit-btn, .delete-btn {
-    padding: 0.3rem 0.7rem;
-    font-size: 0.9rem;
-    margin-right: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+  
+  .inventory-table td:last-child {
+    gap: 0.4rem;
+  }
+  
+  .pagination-container {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .pagination-info {
+    order: 2;
+  }
+  
+  .pagination {
+    order: 1;
   }
   
   .modal-content {
@@ -260,10 +354,25 @@
   }
   
   .edit-btn, .delete-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
-    margin-right: 0.25rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
     margin-bottom: 0.25rem;
+    border-radius: 5px;
+  }
+  
+  .inventory-table td:last-child {
+    gap: 0.3rem;
+  }
+  
+  .pagination-container {
+    margin-top: 1rem;
+    padding: 0.75rem;
+  }
+  
+  .pagination-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    min-width: 35px;
   }
   
   .modal-content {
@@ -319,8 +428,28 @@
   }
   
   .edit-btn, .delete-btn {
-    padding: 0.2rem 0.4rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    border-radius: 4px;
+  }
+  
+  .inventory-table td:last-child {
+    gap: 0.25rem;
+  }
+  
+  .pagination {
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  
+  .pagination-btn {
+    padding: 0.3rem 0.5rem;
     font-size: 0.75rem;
+    min-width: 30px;
+  }
+  
+  .pagination-info {
+    font-size: 0.8rem;
   }
   
   .modal-content {

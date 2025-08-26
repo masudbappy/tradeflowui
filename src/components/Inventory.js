@@ -16,6 +16,12 @@ const Inventory = () => {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  
   const [form, setForm] = useState({
     name: '',
     productCode: '',
@@ -68,7 +74,7 @@ const Inventory = () => {
     return await response.json();
   };
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       
@@ -76,19 +82,42 @@ const Inventory = () => {
       if (!authService.isAuthenticated()) {
         console.error('User not authenticated');
         setProducts(initialProducts);
+        setTotalItems(0);
         return;
       }
       
-      const data = await productsApiCall('/api/products');
-      setProducts(data);
+      // Add pagination parameters to API call
+      const params = new URLSearchParams({
+        page: page - 1, // Backend usually uses 0-based indexing
+        size: itemsPerPage
+      });
+      
+      const data = await productsApiCall(`/api/products?${params}`);
+      
+      // Handle paginated response
+      if (data.content) {
+        // Spring Boot paginated response
+        setProducts(data.content);
+        setTotalItems(data.totalElements);
+      } else if (Array.isArray(data)) {
+        // Simple array response - implement client-side pagination
+        setProducts(data);
+        setTotalItems(data.length);
+      } else {
+        setProducts([]);
+        setTotalItems(0);
+      }
+      
+      setCurrentPage(page);
     } catch (error) {
       console.error('Error loading products:', error);
       // Fallback to initial data if API fails
       setProducts(initialProducts);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [itemsPerPage]);
 
   // Load products from API on component mount
   useEffect(() => {
@@ -271,6 +300,45 @@ const Inventory = () => {
     }
   };
 
+  // Pagination functions
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      loadProducts(page);
+    }
+  };
+  
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+  
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+  
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    
+    return pageNumbers;
+  };
+
   return (
     <div className="inventory-container">
       <div className="inventory-header">
@@ -317,6 +385,43 @@ const Inventory = () => {
         </tbody>
       </table>
       )}
+      
+      {/* Pagination */}
+      {!loading && totalItems > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+          </div>
+          <div className="pagination">
+            <button 
+              className="pagination-btn" 
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            
+            {getPageNumbers().map(page => (
+              <button
+                key={page}
+                className={`pagination-btn ${page === currentPage ? 'active' : ''}`}
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </button>
+            ))}
+            
+            <button 
+              className="pagination-btn" 
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+      
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
