@@ -233,6 +233,44 @@ const Inventory = () => {
     }
   };
 
+  const handleDelete = async (productId, productName) => {
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete "${productName}"?`)) {
+      return;
+    }
+
+    try {
+      // Check if user is authenticated
+      if (!authService.isAuthenticated()) {
+        alert('You must be logged in to delete products');
+        return;
+      }
+
+      console.log(`Deleting product with ID: ${productId}`);
+
+      await productsApiCall(`/api/products/${productId}`, {
+        method: 'DELETE'
+      });
+
+      // Reload products after deletion
+      await loadProducts();
+      alert(`Product "${productName}" deleted successfully!`);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      
+      let errorMessage = 'Error deleting product. Please try again.';
+      
+      if (error.response) {
+        const serverMessage = error.response.data?.message || error.response.data?.error || 'Unknown server error';
+        errorMessage = `Server error (${error.response.status}): ${serverMessage}`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
   return (
     <div className="inventory-container">
       <div className="inventory-header">
@@ -272,7 +310,7 @@ const Inventory = () => {
               <td>{prod.date}</td>
               <td>
                 <button className="edit-btn" onClick={() => openEditModal(prod)}>Edit</button>
-                <button className="history-btn">History</button>
+                <button className="delete-btn" onClick={() => handleDelete(prod.productId, prod.name)}>Delete</button>
               </td>
             </tr>
           ))}

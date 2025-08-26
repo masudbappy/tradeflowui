@@ -67,7 +67,7 @@
 }
 
 /* Fix for "In Action" header and buttons alignment */
-.edit-btn, .history-btn {
+.edit-btn, .delete-btn {
   display: inline-block;
   white-space: nowrap;
 }
@@ -84,7 +84,7 @@
   white-space: nowrap;
 }
 
-.edit-btn, .history-btn {
+.edit-btn, .delete-btn {
   background: #1976d2;
   color: #fff;
   border: none;
@@ -98,11 +98,11 @@
 .edit-btn:hover {
   background: #1565c0;
 }
-.history-btn {
-  background: #6d4c41;
+.delete-btn {
+  background: #d32f2f;
 }
-.history-btn:hover {
-  background: #4e342e;
+.delete-btn:hover {
+  background: #b71c1c;
 }
 .modal-overlay {
   position: fixed;
@@ -212,7 +212,7 @@
     font-size: 0.95rem;
   }
   
-  .edit-btn, .history-btn {
+  .edit-btn, .delete-btn {
     padding: 0.3rem 0.7rem;
     font-size: 0.9rem;
     margin-right: 0.3rem;
@@ -259,7 +259,7 @@
     padding: 0.5rem;
   }
   
-  .edit-btn, .history-btn {
+  .edit-btn, .delete-btn {
     padding: 0.25rem 0.5rem;
     font-size: 0.8rem;
     margin-right: 0.25rem;
@@ -318,7 +318,7 @@
     min-width: 80px;
   }
   
-  .edit-btn, .history-btn {
+  .edit-btn, .delete-btn {
     padding: 0.2rem 0.4rem;
     font-size: 0.75rem;
   }
