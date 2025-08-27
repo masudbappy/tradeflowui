@@ -8,14 +8,6 @@ const customers = [
   { id: 4, name: 'Ms. Islam', phone: '01644444444', address: 'Rajshahi', balance: 3000 },
 ];
 
-// Sample payment history data
-const paymentHistory = [
-  { id: 1, customerId: 1, customerName: 'Mr. Rahman', invoiceNo: 'INV-001', date: '2024-01-15', amount: 15000, paid: 10000, due: 5000, status: 'Partial' },
-  { id: 2, customerId: 1, customerName: 'Mr. Rahman', invoiceNo: 'INV-002', date: '2024-02-10', amount: 8000, paid: 8000, due: 0, status: 'Paid' },
-  { id: 3, customerId: 2, customerName: 'Ms. Akter', invoiceNo: 'INV-003', date: '2024-01-20', amount: 12000, paid: 0, due: 12000, status: 'Unpaid' },
-  { id: 4, customerId: 2, customerName: 'Ms. Akter', invoiceNo: 'INV-004', date: '2024-02-05', amount: 9000, paid: 9000, due: 0, status: 'Paid' },
-  { id: 5, customerId: 3, customerName: 'Mr. Khan', invoiceNo: 'INV-005', date: '2024-01-25', amount: 7000, paid: 3000, due: 4000, status: 'Partial' },
-];
 const products = [
   { name: 'Flat Bar (2 inch)', stock: 3.5, unit: 'ton', rate: 65000 },
   { name: 'Angle (1.5 inch)', stock: 5.2, unit: 'ton', rate: 60000 },
@@ -29,11 +21,6 @@ function SalesInvoice() {
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', address: '', balance: 0 });
-
-  // Customer Payment History
-  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
-  const [historySearchQuery, setHistorySearchQuery] = useState('');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
 
   // Step 2: Products
   const [invoiceProducts, setInvoiceProducts] = useState([]);
@@ -61,14 +48,6 @@ function SalesInvoice() {
     setShowAddCustomer(false);
     setCustomerQuery(newCustomer.name);
   };
-
-  // Payment History logic
-  const filteredPaymentHistory = paymentHistory.filter(payment => {
-    const nameMatch = payment.customerName.toLowerCase().includes(historySearchQuery.toLowerCase()) || 
-                      payment.invoiceNo.toLowerCase().includes(historySearchQuery.toLowerCase());
-    const statusMatch = paymentStatusFilter === 'All' || payment.status === paymentStatusFilter;
-    return nameMatch && statusMatch;
-  });
 
   // Product logic
   const handleAddProductRow = () => {
@@ -195,82 +174,6 @@ function SalesInvoice() {
                 <button type="submit">Save</button>
                 <button type="button" onClick={() => setShowAddCustomer(false)}>Cancel</button>
               </form>
-            )}
-          </div>
-          
-          {/* Customer Payment History Section */}
-          <div className="invoice-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3>Customer Payment History</h3>
-              <button 
-                className="add-customer-btn" 
-                onClick={() => setShowPaymentHistory(!showPaymentHistory)}
-              >
-                {showPaymentHistory ? 'Hide History' : 'View History'}
-              </button>
-            </div>
-            
-            {showPaymentHistory && (
-              <>
-                <div className="customer-row">
-                  <input
-                    type="text"
-                    placeholder="Search by customer name or invoice number"
-                    value={historySearchQuery}
-                    onChange={e => setHistorySearchQuery(e.target.value)}
-                    style={{ flex: 2 }}
-                  />
-                  <select
-                    value={paymentStatusFilter}
-                    onChange={e => setPaymentStatusFilter(e.target.value)}
-                    style={{ flex: 1, marginLeft: '1rem', padding: '0.6rem', border: '1px solid #ddd', borderRadius: '5px' }}
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Unpaid">Unpaid</option>
-                    <option value="Partial">Partial</option>
-                  </select>
-                </div>
-                
-                <table className="product-table" style={{ marginTop: '1rem' }}>
-                  <thead>
-                    <tr>
-                      <th>Invoice No</th>
-                      <th>Customer</th>
-                      <th>Date</th>
-                      <th>Total Amount</th>
-                      <th>Paid Amount</th>
-                      <th>Due Amount</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPaymentHistory.length > 0 ? (
-                      filteredPaymentHistory.map((payment) => (
-                        <tr key={payment.id}>
-                          <td>{payment.invoiceNo}</td>
-                          <td>{payment.customerName}</td>
-                          <td>{payment.date}</td>
-                          <td>৳ {payment.amount.toLocaleString()}</td>
-                          <td>৳ {payment.paid.toLocaleString()}</td>
-                          <td>৳ {payment.due.toLocaleString()}</td>
-                          <td>
-                            <span className={`status-badge ${payment.status.toLowerCase()}`}>
-                              {payment.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
-                          No payment history found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </>
             )}
           </div>
           

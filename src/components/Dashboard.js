@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import Inventory from './Inventory';
 import SalesInvoice from './SalesInvoice';
-import CustomerProfile from './CustomerProfile';
+import Customer from './Customer';
 import Report from './Report';
 import UserManagement from './UserManagement';
 import authService from '../services/authService';
@@ -125,7 +125,7 @@ const Dashboard = ({ onLogout }) => {
         )}
   {view === 'inventory' && <Inventory />}
   {view === 'sales' && <SalesInvoice />}
-  {view === 'customer' && <CustomerProfile />}
+  {view === 'customer' && <Customer />}
   {view === 'report' && <Report />}
           {view === 'user' && <UserManagement isAdmin={isAdmin} />}
       </div>
