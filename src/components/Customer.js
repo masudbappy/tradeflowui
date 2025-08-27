@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Customer.css';
-
-// Sample customers data
-const customers = [
-  { id: 1, name: 'Mr. Rahman', phone: '01711111111', address: 'Dhaka', balance: 5000 },
-  { id: 2, name: 'Ms. Akter', phone: '01822222222', address: 'Chittagong', balance: 12000 },
-  { id: 3, name: 'Mr. Khan', phone: '01933333333', address: 'Sylhet', balance: 8000 },
-  { id: 4, name: 'Ms. Islam', phone: '01644444444', address: 'Rajshahi', balance: 3000 },
-];
+import authService from '../services/authService';
 
 // Sample payment history data
 const paymentHistory = [
@@ -22,35 +15,137 @@ const paymentHistory = [
 
 function Customer() {
   // Customer management states
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', address: '', balance: 0 });
+  const [newCustomer, setNewCustomer] = useState({ name: '', phoneNumber: '', address: '', dueAmount: 0 });
 
   // Payment history states
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState('All');
 
+  // Helper function to make authenticated API calls to customer service
+  const makeCustomerApiCall = async (endpoint, options = {}) => {
+    const url = `http://localhost:8081${endpoint}`;
+    
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeader(),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    console.log('Making Customer API call:', { url, config });
+
+    try {
+      const response = await fetch(url, config);
+      
+      console.log('Customer API response status:', response.status, response.statusText);
+      
+      // Handle unauthorized responses
+      if (response.status === 401) {
+        authService.logout();
+        window.location.href = '/';
+        return;
+      }
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorBody = await response.text();
+          console.log('Error response body:', errorBody);
+          if (errorBody) {
+            errorMessage = `${errorMessage} - ${errorBody}`;
+          }
+        } catch (e) {
+          // Ignore errors when trying to read error body
+        }
+        throw new Error(errorMessage);
+      }
+
+      const responseData = await response.json();
+      console.log('Customer API response data:', responseData);
+      return responseData;
+    } catch (error) {
+      console.error('Customer API call failed:', error);
+      throw error;
+    }
+  };
+
+  // Fetch customers from API on component mount
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setLoading(true);
+        // Use custom API call function with authentication
+        const data = await makeCustomerApiCall('/api/customers');
+        console.log('Fetched customers:', data);
+        setCustomers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        setCustomers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
+
   // Customer search and management
   const filteredCustomers = customers.filter(
     c => c.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) || 
-         c.phone.includes(customerSearchQuery)
+         c.phoneNumber.includes(customerSearchQuery)
   );
 
   const handleCustomerSelect = (customer) => {
     setSelectedCustomer(customer);
-    setSelectedCustomerFilter(customer.id.toString());
+    setSelectedCustomerFilter(customer.customerId.toString());
   };
 
-  const handleAddCustomer = (e) => {
+  const handleAddCustomer = async (e) => {
     e.preventDefault();
-    const customerId = customers.length + 1;
-    const customerWithId = { ...newCustomer, id: customerId };
-    customers.push(customerWithId);
-    setSelectedCustomer(customerWithId);
-    setShowAddCustomer(false);
-    setNewCustomer({ name: '', phone: '', address: '', balance: 0 });
+    
+    try {
+      // Prepare payload according to your API specification
+      const customerPayload = {
+        name: newCustomer.name.trim(),
+        phoneNumber: newCustomer.phoneNumber.trim(),
+        address: newCustomer.address.trim(),
+        dueAmount: parseFloat(newCustomer.dueAmount) || 0.00
+      };
+
+      console.log('Creating customer with payload:', customerPayload);
+
+      // Validate required fields
+      if (!customerPayload.name || !customerPayload.phoneNumber || !customerPayload.address) {
+        alert('Name, phone number, and address are required');
+        return;
+      }
+
+      // Use custom API call function with authentication
+      const newCustomerResponse = await makeCustomerApiCall('/api/customers', {
+        method: 'POST',
+        body: JSON.stringify(customerPayload)
+      });
+      console.log('Customer created successfully:', newCustomerResponse);
+
+      // Add new customer to the local state
+      setCustomers(prevCustomers => [...prevCustomers, newCustomerResponse]);
+      setSelectedCustomer(newCustomerResponse);
+      setShowAddCustomer(false);
+      setNewCustomer({ name: '', phoneNumber: '', address: '', dueAmount: 0 });
+
+      alert('Customer added successfully!');
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      alert(`Failed to add customer: ${error.message}`);
+    }
   };
 
   // Payment history filtering
@@ -93,20 +188,26 @@ function Customer() {
         {/* Customer List */}
         {customerSearchQuery && (
           <div className="customer-list">
-            {filteredCustomers.map((customer) => (
-              <div 
-                key={customer.id} 
-                className={`customer-item ${selectedCustomer?.id === customer.id ? 'selected' : ''}`}
-                onClick={() => handleCustomerSelect(customer)}
-              >
-                <div className="customer-info">
-                  <strong>{customer.name}</strong> ({customer.phone})
-                  <div className="customer-details">
-                    Address: {customer.address} | Balance: ৳{customer.balance.toLocaleString()}
+            {loading ? (
+              <div className="loading">Loading customers...</div>
+            ) : filteredCustomers.length > 0 ? (
+              filteredCustomers.map((customer) => (
+                <div 
+                  key={customer.customerId} 
+                  className={`customer-item ${selectedCustomer?.customerId === customer.customerId ? 'selected' : ''}`}
+                  onClick={() => handleCustomerSelect(customer)}
+                >
+                  <div className="customer-info">
+                    <strong>{customer.name}</strong> ({customer.phoneNumber})
+                    <div className="customer-details">
+                      Address: {customer.address} | Due Amount: ৳{customer.dueAmount?.toLocaleString() || '0'}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="no-results">No customers found</div>
+            )}
           </div>
         )}
 
@@ -116,9 +217,11 @@ function Customer() {
             <h4>Selected Customer</h4>
             <div className="customer-details-card">
               <div><strong>Name:</strong> {selectedCustomer.name}</div>
-              <div><strong>Phone:</strong> {selectedCustomer.phone}</div>
+              <div><strong>Phone:</strong> {selectedCustomer.phoneNumber}</div>
               <div><strong>Address:</strong> {selectedCustomer.address}</div>
-              <div><strong>Current Balance:</strong> ৳{selectedCustomer.balance.toLocaleString()}</div>
+              <div><strong>Due Amount:</strong> ৳{selectedCustomer.dueAmount?.toLocaleString() || '0'}</div>
+              <div><strong>Customer ID:</strong> {selectedCustomer.customerId}</div>
+              <div><strong>Created:</strong> {selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}</div>
             </div>
           </div>
         )}
@@ -137,8 +240,8 @@ function Customer() {
                 />
                 <input 
                   placeholder="Phone Number" 
-                  value={newCustomer.phone} 
-                  onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} 
+                  value={newCustomer.phoneNumber} 
+                  onChange={e => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })} 
                   required 
                 />
                 <input 
@@ -148,10 +251,11 @@ function Customer() {
                   required 
                 />
                 <input 
-                  placeholder="Opening Balance" 
+                  placeholder="Due Amount" 
                   type="number" 
-                  value={newCustomer.balance} 
-                  onChange={e => setNewCustomer({ ...newCustomer, balance: parseFloat(e.target.value) || 0 })} 
+                  step="0.01"
+                  value={newCustomer.dueAmount} 
+                  onChange={e => setNewCustomer({ ...newCustomer, dueAmount: parseFloat(e.target.value) || 0 })} 
                 />
                 <div className="form-actions">
                   <button type="submit" className="save-btn">Save Customer</button>
@@ -184,7 +288,7 @@ function Customer() {
           >
             <option value="All">All Customers</option>
             {customers.map(customer => (
-              <option key={customer.id} value={customer.id.toString()}>
+              <option key={customer.customerId} value={customer.customerId.toString()}>
                 {customer.name}
               </option>
             ))}
