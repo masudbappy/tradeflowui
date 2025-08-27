@@ -2,13 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './SalesInvoice.css';
 import authService from '../services/authService';
 
-const customers = [
-  { id: 1, name: 'Mr. Rahman', phone: '01711111111', address: 'Dhaka', balance: 5000 },
-  { id: 2, name: 'Ms. Akter', phone: '01822222222', address: 'Chittagong', balance: 12000 },
-  { id: 3, name: 'Mr. Khan', phone: '01933333333', address: 'Sylhet', balance: 8000 },
-  { id: 4, name: 'Ms. Islam', phone: '01644444444', address: 'Rajshahi', balance: 3000 },
-];
-
 const paymentMethods = ['Cash', 'Bank', 'Mobile Banking'];
 
 function SalesInvoice() {
@@ -16,8 +9,9 @@ function SalesInvoice() {
   const [customerQuery, setCustomerQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showCustomerList, setShowCustomerList] = useState(false);
-  const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', address: '', balance: 0 });
+  const [customerSearchResults, setCustomerSearchResults] = useState([]);
+  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
+  const [customerSearchError, setCustomerSearchError] = useState(null);
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Step 2: Products from API
@@ -56,6 +50,85 @@ function SalesInvoice() {
     return await response.json();
   };
 
+  // API call function for customers
+  const customersApiCall = async (endpoint, options = {}) => {
+    const url = `http://localhost:8081${endpoint}`;
+    
+    const config = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeader(),
+      },
+      ...options,
+    };
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  };
+
+  // Search customers with debouncing
+  const searchCustomers = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setCustomerSearchResults([]);
+      setCustomerSearchError(null);
+      setShowCustomerList(false);
+      return;
+    }
+
+    setIsSearchingCustomers(true);
+    setCustomerSearchError(null);
+    setShowCustomerList(true);
+
+    try {
+      const data = await customersApiCall(`/api/customers/search?q=${encodeURIComponent(query)}`);
+      console.log('Customer search API response:', data);
+      console.log('Response type:', typeof data);
+      console.log('Is array:', Array.isArray(data));
+      
+      // Handle different possible response formats
+      let customers = [];
+      if (Array.isArray(data)) {
+        customers = data;
+      } else if (data && Array.isArray(data.content)) {
+        // Paginated response
+        customers = data.content;
+      } else if (data && Array.isArray(data.data)) {
+        // Response wrapped in data property
+        customers = data.data;
+      } else if (data && data.customers && Array.isArray(data.customers)) {
+        // Response with customers property
+        customers = data.customers;
+      } else {
+        console.warn('Unexpected response format:', data);
+        customers = [];
+      }
+      
+      console.log('Processed customers:', customers);
+      setCustomerSearchResults(customers);
+    } catch (error) {
+      console.error('Error searching customers:', error);
+      setCustomerSearchError('Failed to search customers. Please try again.');
+      setCustomerSearchResults([]);
+    } finally {
+      setIsSearchingCustomers(false);
+    }
+  }, []);
+
+  // Debounced customer search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchCustomers(customerQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [customerQuery, searchCustomers]);
+
   // Search products with debouncing
   const searchProducts = useCallback(async (query) => {
     if (!query || query.length < 2) {
@@ -88,22 +161,10 @@ function SalesInvoice() {
     return () => clearTimeout(timeoutId);
   }, [productSearchQuery, searchProducts]);
 
-  // Customer search logic
-  const filteredCustomers = customers.filter(
-    c => c.name.toLowerCase().includes(customerQuery.toLowerCase()) || c.phone.includes(customerQuery)
-  );
-
-  const handleCustomerSelect = (c) => {
-    setSelectedCustomer(c);
-    setCustomerQuery(c.name);
+  const handleCustomerSelect = (customer) => {
+    setSelectedCustomer(customer);
+    setCustomerQuery(customer.name);
     setShowCustomerList(false);
-  };
-
-  const handleAddCustomer = (e) => {
-    e.preventDefault();
-    setSelectedCustomer(newCustomer);
-    setShowAddCustomer(false);
-    setCustomerQuery(newCustomer.name);
   };
 
   // Product logic - Add product from search results with stock validation
@@ -284,36 +345,55 @@ function SalesInvoice() {
                 type="text"
                 placeholder="Search customer by name or phone"
                 value={customerQuery}
-                onChange={e => { setCustomerQuery(e.target.value); setShowCustomerList(true); }}
-                onFocus={() => setShowCustomerList(true)}
+                onChange={e => setCustomerQuery(e.target.value)}
+                onFocus={() => customerQuery.length >= 2 && setShowCustomerList(true)}
               />
-              <button className="add-customer-btn" onClick={() => setShowAddCustomer(true)}>+ Add New Customer</button>
             </div>
             {showCustomerList && customerQuery && (
               <div className="customer-list">
-                {filteredCustomers.map((c, idx) => (
-                  <div key={idx} className="customer-item" onClick={() => handleCustomerSelect(c)}>
-                    {c.name} ({c.phone})
+                {isSearchingCustomers ? (
+                  <div className="search-loading">
+                    Searching customers...
+                    <span className="loading-spinner"></span>
                   </div>
-                ))}
+                ) : customerSearchError ? (
+                  <div className="search-error">
+                    {customerSearchError}
+                  </div>
+                ) : customerSearchResults.length > 0 ? (
+                  customerSearchResults.map((customer, idx) => {
+                    console.log('Rendering customer:', customer); // Debug log
+                    return (
+                      <div key={customer.customerId || customer.id || idx} className="customer-item" onClick={() => handleCustomerSelect(customer)}>
+                        <div className="customer-info">
+                          <strong>{customer.name || 'No Name'}</strong> ({customer.phoneNumber || customer.phone || 'No Phone'})
+                          <div className="customer-details">
+                            Address: {customer.address || 'No Address'} | Due: ৳{(customer.dueAmount || customer.balance || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="no-results">
+                    No customers found for "{customerQuery}"
+                    {customerSearchResults.length === 0 && !isSearchingCustomers && !customerSearchError && (
+                      <div style={{fontSize: '12px', color: '#666', marginTop: '5px'}}>
+                        Debug: Results array is empty
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             {selectedCustomer && (
               <div className="customer-info">
                 <div><strong>Name:</strong> {selectedCustomer.name}</div>
+                <div><strong>Phone:</strong> {selectedCustomer.phoneNumber}</div>
                 <div><strong>Address:</strong> {selectedCustomer.address}</div>
-                <div><strong>Current Balance:</strong> ৳ {selectedCustomer.balance}</div>
+                <div><strong>Due Amount:</strong> ৳ {selectedCustomer.dueAmount?.toLocaleString() || '0'}</div>
+                {selectedCustomer.customerId && <div><strong>Customer ID:</strong> {selectedCustomer.customerId}</div>}
               </div>
-            )}
-            {showAddCustomer && (
-              <form className="add-customer-form" onSubmit={handleAddCustomer}>
-                <input placeholder="Name" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} required />
-                <input placeholder="Phone" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} required />
-                <input placeholder="Address" value={newCustomer.address} onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })} required />
-                <input placeholder="Opening Balance" type="number" value={newCustomer.balance} onChange={e => setNewCustomer({ ...newCustomer, balance: e.target.value })} />
-                <button type="submit">Save</button>
-                <button type="button" onClick={() => setShowAddCustomer(false)}>Cancel</button>
-              </form>
             )}
           </div>
           
