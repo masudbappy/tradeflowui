@@ -28,6 +28,11 @@ function SalesInvoice() {
   const [amountPaid, setAmountPaid] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
 
+  // Sale creation states
+  const [saleResponse, setSaleResponse] = useState(null);
+  const [isCreatingSale, setIsCreatingSale] = useState(false);
+  const [saleError, setSaleError] = useState(null);
+
   // API call function for products
   const productsApiCall = async (endpoint, options = {}) => {
     const url = `http://localhost:8081${endpoint}`;
@@ -45,6 +50,40 @@ function SalesInvoice() {
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  };
+
+  // API call function for sales
+  const salesApiCall = async (endpoint, options = {}) => {
+    const url = `http://localhost:8081${endpoint}`;
+    
+    const config = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeader(),
+      },
+      ...options,
+    };
+
+    console.log('Making Sales API call:', { url, config });
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorBody = await response.text();
+        console.log('Error response body:', errorBody);
+        if (errorBody) {
+          errorMessage = `${errorMessage} - ${errorBody}`;
+        }
+      } catch (e) {
+        // Ignore errors when trying to read error body
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -261,6 +300,87 @@ function SalesInvoice() {
 
   // Print logic
   const [showPrint, setShowPrint] = useState(false);
+
+  // Create sale and print invoice
+  const handleCreateAndPrint = async () => {
+    // Validation
+    if (!selectedCustomer) {
+      alert('Please select a customer');
+      return;
+    }
+
+    if (invoiceProducts.length === 0) {
+      alert('Please add at least one product');
+      return;
+    }
+
+    if (parseFloat(amountPaid) < 0) {
+      alert('Amount paid cannot be negative');
+      return;
+    }
+
+    try {
+      setIsCreatingSale(true);
+      setSaleError(null);
+
+      // Prepare the sale payload according to your API specification
+      const salePayload = {
+        customer: {
+          customerId: selectedCustomer.customerId || selectedCustomer.id,
+          phone: selectedCustomer.phoneNumber || selectedCustomer.phone,
+          address: selectedCustomer.address,
+          dueAmount: parseFloat(selectedCustomer.dueAmount || selectedCustomer.balance || 0)
+        },
+        date: invoiceDate,
+        products: invoiceProducts.map(product => ({
+          productId: product.productId,
+          productName: product.name,
+          productCode: product.productCode,
+          unit: product.unit,
+          stock: product.availableStock,
+          quantity: parseFloat(product.quantity),
+          sellingPrice: parseFloat(product.sellingPrice),
+          totalPrice: parseFloat(product.total)
+        })),
+        discount: parseFloat(discount) || 0,
+        laborCost: parseFloat(otherCost) || 0,
+        amountPaid: parseFloat(amountPaid) || 0,
+        paymentMethod: paymentMethod
+      };
+
+      console.log('Creating sale with payload:', salePayload);
+
+      // Create the sale
+      const response = await salesApiCall('/api/sales', {
+        body: JSON.stringify(salePayload)
+      });
+
+      console.log('Sale created successfully:', response);
+      setSaleResponse(response);
+
+      // Show success message
+      alert(`Sale created successfully! Sale Code: ${response.saleCode}`);
+
+      // Print the invoice
+      setShowPrint(true);
+      setTimeout(() => {
+        window.print();
+        setShowPrint(false);
+        
+        // Optional: Reset form after successful creation
+        // resetForm();
+      }, 500);
+
+    } catch (error) {
+      console.error('Error creating sale:', error);
+      setSaleError(error.message);
+      alert(`Failed to create sale: ${error.message}`);
+    } finally {
+      setIsCreatingSale(false);
+    }
+  };
+
+  // Legacy print function (for draft functionality)
   const handlePrint = () => {
     setShowPrint(true);
     setTimeout(() => {
@@ -275,14 +395,21 @@ function SalesInvoice() {
         <div className="print-invoice">
           <h2>Sales Invoice</h2>
           <div className="invoice-header">
-            <div><strong>Invoice Date:</strong> {invoiceDate}</div>
+            <div><strong>Invoice Date:</strong> {saleResponse ? saleResponse.date : invoiceDate}</div>
+            {saleResponse && (
+              <>
+                <div><strong>Sale Code:</strong> {saleResponse.saleCode}</div>
+                <div><strong>Sale ID:</strong> {saleResponse.saleId}</div>
+                <div><strong>Created:</strong> {new Date(saleResponse.createdAt).toLocaleString()}</div>
+              </>
+            )}
           </div>
           {selectedCustomer && (
             <div className="customer-info">
-              <div><strong>Name:</strong> {selectedCustomer.name}</div>
+              <div><strong>Name:</strong> {saleResponse ? saleResponse.customerName : selectedCustomer.name}</div>
               <div><strong>Address:</strong> {selectedCustomer.address}</div>
-              <div><strong>Phone:</strong> {selectedCustomer.phone}</div>
-              <div><strong>Current Balance:</strong> ৳ {selectedCustomer.balance}</div>
+              <div><strong>Phone:</strong> {selectedCustomer.phoneNumber || selectedCustomer.phone}</div>
+              <div><strong>Due Amount:</strong> ৳ {(selectedCustomer.dueAmount || selectedCustomer.balance || 0).toLocaleString()}</div>
             </div>
           )}
           <table className="product-table">
@@ -308,15 +435,15 @@ function SalesInvoice() {
             </tbody>
           </table>
           <div className="calc-row">
-            <div>Subtotal: <strong>৳ {subtotal}</strong></div>
-            <div>Discount: <strong>৳ {discount}</strong></div>
-            <div>Other Cost: <strong>৳ {otherCost}</strong></div>
-            <div>Grand Total: <strong>৳ {grandTotal}</strong></div>
+            <div>Subtotal: <strong>৳ {saleResponse ? (saleResponse.totalPrice - saleResponse.laborCost + saleResponse.discountAmount).toLocaleString() : subtotal.toLocaleString()}</strong></div>
+            <div>Discount: <strong>৳ {saleResponse ? saleResponse.discountAmount.toLocaleString() : parseFloat(discount).toLocaleString()}</strong></div>
+            <div>Labor Cost: <strong>৳ {saleResponse ? saleResponse.laborCost.toLocaleString() : parseFloat(otherCost).toLocaleString()}</strong></div>
+            <div>Grand Total: <strong>৳ {saleResponse ? saleResponse.totalPrice.toLocaleString() : grandTotal.toLocaleString()}</strong></div>
           </div>
           <div className="calc-row">
-            <div>Amount Paid: <strong>৳ {amountPaid}</strong></div>
-            <div>Payment Method: <strong>{paymentMethod}</strong></div>
-            <div>Due Amount: <strong>৳ {dueAmount}</strong></div>
+            <div>Amount Paid: <strong>৳ {saleResponse ? saleResponse.paidAmount.toLocaleString() : parseFloat(amountPaid).toLocaleString()}</strong></div>
+            <div>Payment Method: <strong>{saleResponse ? saleResponse.paymentMethod : paymentMethod}</strong></div>
+            <div>Due Amount: <strong>৳ {saleResponse ? saleResponse.dueAmount.toLocaleString() : dueAmount.toLocaleString()}</strong></div>
           </div>
         </div>
       ) : (
@@ -562,9 +689,20 @@ function SalesInvoice() {
             <div className="calc-row">
               <div>Due Amount: <strong>৳ {dueAmount}</strong></div>
             </div>
+            {saleError && (
+              <div className="error-message" style={{color: 'red', marginTop: '10px', padding: '10px', background: '#ffe6e6', border: '1px solid #ff9999', borderRadius: '4px'}}>
+                <strong>Error creating sale:</strong> {saleError}
+              </div>
+            )}
             <div className="invoice-actions">
-              <button className="create-btn" onClick={handlePrint}>Create & Print Invoice</button>
-              <button className="draft-btn">Save as Draft</button>
+              <button 
+                className="create-btn" 
+                onClick={handleCreateAndPrint}
+                disabled={isCreatingSale}
+              >
+                {isCreatingSale ? 'Creating Sale...' : 'Create & Print Invoice'}
+              </button>
+              <button className="draft-btn" onClick={handlePrint}>Print Draft</button>
             </div>
           </div>
         </>

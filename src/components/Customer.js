@@ -27,6 +27,14 @@ function Customer() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState('All');
 
+  // Due payment states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentNote, setPaymentNote] = useState('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
   // Helper function to make authenticated API calls to customer service
   const makeCustomerApiCall = async (endpoint, options = {}) => {
     const url = `http://localhost:8081${endpoint}`;
@@ -40,41 +48,46 @@ function Customer() {
       ...options,
     };
 
-    console.log('Making Customer API call:', { url, config });
-
-    try {
-      const response = await fetch(url, config);
-      
-      console.log('Customer API response status:', response.status, response.statusText);
-      
-      // Handle unauthorized responses
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
       if (response.status === 401) {
         authService.logout();
-        window.location.href = '/';
+        window.location.href = '/login';
         return;
       }
-
-      if (!response.ok) {
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        try {
-          const errorBody = await response.text();
-          console.log('Error response body:', errorBody);
-          if (errorBody) {
-            errorMessage = `${errorMessage} - ${errorBody}`;
-          }
-        } catch (e) {
-          // Ignore errors when trying to read error body
-        }
-        throw new Error(errorMessage);
-      }
-
-      const responseData = await response.json();
-      console.log('Customer API response data:', responseData);
-      return responseData;
-    } catch (error) {
-      console.error('Customer API call failed:', error);
-      throw error;
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    return await response.json();
+  };
+
+  // Helper function for sales payment API calls
+  const makeSalesPaymentApiCall = async (endpoint, options = {}) => {
+    const url = `http://localhost:8081${endpoint}`;
+    
+    const config = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeader(),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        authService.logout();
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   };
 
   // Fetch customers from API on component mount
@@ -99,8 +112,8 @@ function Customer() {
 
   // Customer search and management
   const filteredCustomers = customers.filter(
-    c => c.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) || 
-         c.phoneNumber.includes(customerSearchQuery)
+    c => (c.name && c.name.toLowerCase().includes(customerSearchQuery.toLowerCase())) || 
+         (c.phoneNumber && c.phoneNumber.includes(customerSearchQuery))
   );
 
   const handleCustomerSelect = (customer) => {
@@ -148,10 +161,83 @@ function Customer() {
     }
   };
 
+  // Handle due payment
+  const handleMakePayment = async (e) => {
+    e.preventDefault();
+    
+    if (!selectedCustomer) {
+      alert('Please select a customer first');
+      return;
+    }
+
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+      alert('Please enter a valid payment amount');
+      return;
+    }
+
+    if (parseFloat(paymentAmount) > selectedCustomer.dueAmount) {
+      const confirmed = window.confirm(
+        `Payment amount (৳${parseFloat(paymentAmount).toLocaleString()}) is greater than due amount (৳${selectedCustomer.dueAmount.toLocaleString()}). Do you want to proceed?`
+      );
+      if (!confirmed) return;
+    }
+
+    try {
+      setIsProcessingPayment(true);
+
+      // Prepare payment payload for sales payment API
+      const paymentPayload = {
+        customerId: selectedCustomer.customerId,
+        amount: parseFloat(paymentAmount),
+        paymentMethod: paymentMethod,
+        note: paymentNote.trim() || 'Due payment',
+        date: paymentDate
+      };
+
+      console.log('Processing payment with payload:', paymentPayload);
+
+      // Make API call to process payment using sales payment endpoint
+      const paymentResponse = await makeSalesPaymentApiCall('/api/sales/payment', {
+        body: JSON.stringify(paymentPayload)
+      });
+
+      console.log('Payment processed successfully:', paymentResponse);
+
+      // Update customer's due amount in local state
+      const updatedCustomers = customers.map(customer => 
+        customer.customerId === selectedCustomer.customerId 
+          ? { ...customer, dueAmount: customer.dueAmount - parseFloat(paymentAmount) }
+          : customer
+      );
+      setCustomers(updatedCustomers);
+
+      // Update selected customer
+      setSelectedCustomer({
+        ...selectedCustomer,
+        dueAmount: selectedCustomer.dueAmount - parseFloat(paymentAmount)
+      });
+
+      // Reset payment form
+      setPaymentAmount('');
+      setPaymentNote('');
+      setPaymentMethod('Cash');
+      setPaymentDate(new Date().toISOString().split('T')[0]);
+      setShowPaymentModal(false);
+
+      alert(`Payment of ৳${parseFloat(paymentAmount).toLocaleString()} processed successfully!`);
+
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      alert(`Failed to process payment: ${error.message}`);
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   // Payment history filtering
   const filteredPaymentHistory = paymentHistory.filter(payment => {
-    const nameMatch = payment.customerName.toLowerCase().includes(historySearchQuery.toLowerCase()) || 
-                      payment.invoiceNo.toLowerCase().includes(historySearchQuery.toLowerCase());
+    const nameMatch = (payment.customerName && payment.customerName.toLowerCase().includes(historySearchQuery.toLowerCase())) || 
+                      (payment.invoiceNo && payment.invoiceNo.toLowerCase().includes(historySearchQuery.toLowerCase()));
     const statusMatch = paymentStatusFilter === 'All' || payment.status === paymentStatusFilter;
     const customerMatch = selectedCustomerFilter === 'All' || payment.customerId.toString() === selectedCustomerFilter;
     return nameMatch && statusMatch && customerMatch;
@@ -222,6 +308,185 @@ function Customer() {
               <div><strong>Due Amount:</strong> ৳{selectedCustomer.dueAmount?.toLocaleString() || '0'}</div>
               <div><strong>Customer ID:</strong> {selectedCustomer.customerId}</div>
               <div><strong>Created:</strong> {selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}</div>
+              
+              {/* Payment Button */}
+              {selectedCustomer.dueAmount > 0 && (
+                <div style={{ marginTop: '15px' }}>
+                  <button 
+                    className="payment-btn" 
+                    onClick={() => setShowPaymentModal(true)}
+                    style={{
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    💰 Make Payment
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Payment Modal */}
+        {showPaymentModal && selectedCustomer && (
+          <div className="payment-modal" style={{
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}>
+            <div className="payment-modal-content" style={{
+              backgroundColor: 'white',
+              padding: '30px',
+              borderRadius: '8px',
+              width: '400px',
+              maxHeight: '80vh',
+              overflowY: 'auto'
+            }}>
+              <h4 style={{ marginBottom: '20px', color: '#333' }}>
+                Make Payment for {selectedCustomer.name}
+              </h4>
+              
+              <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                <strong>Current Due Amount: ৳{selectedCustomer.dueAmount?.toLocaleString() || '0'}</strong>
+              </div>
+
+              <form onSubmit={handleMakePayment} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Payment Amount (৳) *
+                  </label>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={selectedCustomer.dueAmount}
+                    placeholder="Enter payment amount"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Payment Method *
+                  </label>
+                  <select 
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select Payment Method</option>
+                    <option value="CASH">Cash</option>
+                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                    <option value="MOBILE_BANKING">Mobile Banking</option>
+                    <option value="CARD">Card</option>
+                    <option value="CHEQUE">Cheque</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Payment Date *
+                  </label>
+                  <input 
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Payment Note (Optional)
+                  </label>
+                  <textarea 
+                    placeholder="Add payment note..."
+                    value={paymentNote}
+                    onChange={(e) => setPaymentNote(e.target.value)}
+                    rows="3"
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setPaymentAmount('');
+                      setPaymentMethod('');
+                      setPaymentDate(new Date().toISOString().split('T')[0]);
+                      setPaymentNote('');
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      backgroundColor: '#f8f9fa',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isProcessingPayment || !paymentAmount || !paymentMethod}
+                    style={{
+                      padding: '10px 20px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      backgroundColor: isProcessingPayment ? '#6c757d' : '#28a745',
+                      color: 'white',
+                      cursor: isProcessingPayment ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {isProcessingPayment ? 'Processing...' : 'Process Payment'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
