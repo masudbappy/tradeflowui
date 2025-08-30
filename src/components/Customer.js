@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Customer.css';
 import authService from '../services/authService';
-
-// Sample payment history data
-const paymentHistory = [
-  { id: 1, customerId: 1, customerName: 'Mr. Rahman', invoiceNo: 'INV-001', date: '2024-01-15', amount: 15000, paid: 10000, due: 5000, status: 'Partial' },
-  { id: 2, customerId: 1, customerName: 'Mr. Rahman', invoiceNo: 'INV-002', date: '2024-02-10', amount: 8000, paid: 8000, due: 0, status: 'Paid' },
-  { id: 3, customerId: 2, customerName: 'Ms. Akter', invoiceNo: 'INV-003', date: '2024-01-20', amount: 12000, paid: 0, due: 12000, status: 'Unpaid' },
-  { id: 4, customerId: 2, customerName: 'Ms. Akter', invoiceNo: 'INV-004', date: '2024-02-05', amount: 9000, paid: 9000, due: 0, status: 'Paid' },
-  { id: 5, customerId: 3, customerName: 'Mr. Khan', invoiceNo: 'INV-005', date: '2024-01-25', amount: 7000, paid: 3000, due: 4000, status: 'Partial' },
-  { id: 6, customerId: 3, customerName: 'Mr. Khan', invoiceNo: 'INV-006', date: '2024-02-15', amount: 6000, paid: 6000, due: 0, status: 'Paid' },
-  { id: 7, customerId: 4, customerName: 'Ms. Islam', invoiceNo: 'INV-007', date: '2024-01-30', amount: 4000, paid: 1000, due: 3000, status: 'Partial' },
-];
 
 function Customer() {
   // Customer management states
@@ -25,7 +14,13 @@ function Customer() {
   // Payment history states
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
-  const [selectedCustomerFilter, setSelectedCustomerFilter] = useState('All');
+  const [paymentHistoryData, setPaymentHistoryData] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historySize, setHistorySize] = useState(10);
+  const [historyTotalPages, setHistoryTotalPages] = useState(0);
+  const [historySortDirection, setHistorySortDirection] = useState('desc');
 
   // Due payment states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -36,7 +31,7 @@ function Customer() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Helper function to make authenticated API calls to customer service
-  const makeCustomerApiCall = async (endpoint, options = {}) => {
+  const makeCustomerApiCall = useCallback(async (endpoint, options = {}) => {
     const url = `http://localhost:8081${endpoint}`;
     
     const config = {
@@ -60,7 +55,7 @@ function Customer() {
     }
 
     return await response.json();
-  };
+  }, []);
 
   // Helper function for sales payment API calls
   const makeSalesPaymentApiCall = async (endpoint, options = {}) => {
@@ -108,7 +103,82 @@ function Customer() {
     };
 
     fetchCustomers();
-  }, []);
+  }, [makeCustomerApiCall]);
+
+  // Fetch payment history from API
+  const fetchPaymentHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      setHistoryError(null);
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: historyPage.toString(),
+        size: historySize.toString(),
+        sort: `date,${historySortDirection}`
+      });
+
+      // Add filters if specified
+      if (paymentStatusFilter !== 'All') {
+        params.append('status', paymentStatusFilter);
+      }
+      
+      if (paymentStatusFilter !== 'All') {
+        params.append('transactionType', paymentStatusFilter);
+      }
+
+      if (historySearchQuery.trim()) {
+        // Try the search parameter that your backend expects
+        const searchValue = historySearchQuery.trim();
+        params.append('search', searchValue);  // Try 'search' instead of 'q'
+        console.log('Adding search parameter:', searchValue);
+      }
+
+      const endpoint = `/api/customers/payment-history?${params.toString()}`;
+      console.log('Fetching payment history from:', endpoint);
+      console.log('Search query being sent:', historySearchQuery);
+      console.log('All params:', params.toString());
+
+      const response = await makeCustomerApiCall(endpoint);
+      console.log('Payment history response:', response);
+
+      // Handle different response formats
+      if (response.content && Array.isArray(response.content)) {
+        // Paginated response
+        setPaymentHistoryData(response.content);
+        setHistoryTotalPages(response.totalPages || 0);
+      } else if (Array.isArray(response)) {
+        // Direct array response
+        setPaymentHistoryData(response);
+        setHistoryTotalPages(1);
+      } else {
+        console.warn('Unexpected payment history response format:', response);
+        setPaymentHistoryData([]);
+        setHistoryTotalPages(0);
+      }
+
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      setHistoryError('Failed to fetch payment history. Please try again.');
+      setPaymentHistoryData([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [historyPage, historySize, historySortDirection, paymentStatusFilter, historySearchQuery, makeCustomerApiCall]);
+
+  // Fetch payment history on component mount and when filters change
+  useEffect(() => {
+    fetchPaymentHistory();
+  }, [historyPage, historySize, historySortDirection, paymentStatusFilter, fetchPaymentHistory]);
+
+  // Debounced search for payment history
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchPaymentHistory();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [historySearchQuery, fetchPaymentHistory]);
 
   // Customer search and management
   const filteredCustomers = customers.filter(
@@ -118,7 +188,6 @@ function Customer() {
 
   const handleCustomerSelect = (customer) => {
     setSelectedCustomer(customer);
-    setSelectedCustomerFilter(customer.customerId.toString());
   };
 
   const handleAddCustomer = async (e) => {
@@ -233,20 +302,6 @@ function Customer() {
       setIsProcessingPayment(false);
     }
   };
-
-  // Payment history filtering
-  const filteredPaymentHistory = paymentHistory.filter(payment => {
-    const nameMatch = (payment.customerName && payment.customerName.toLowerCase().includes(historySearchQuery.toLowerCase())) || 
-                      (payment.invoiceNo && payment.invoiceNo.toLowerCase().includes(historySearchQuery.toLowerCase()));
-    const statusMatch = paymentStatusFilter === 'All' || payment.status === paymentStatusFilter;
-    const customerMatch = selectedCustomerFilter === 'All' || payment.customerId.toString() === selectedCustomerFilter;
-    return nameMatch && statusMatch && customerMatch;
-  });
-
-  // Calculate summary statistics
-  const totalAmount = filteredPaymentHistory.reduce((sum, payment) => sum + payment.amount, 0);
-  const totalPaid = filteredPaymentHistory.reduce((sum, payment) => sum + payment.paid, 0);
-  const totalDue = filteredPaymentHistory.reduce((sum, payment) => sum + payment.due, 0);
 
   return (
     <div className="customer-container">
@@ -540,24 +595,11 @@ function Customer() {
         <div className="history-controls">
           <input
             type="text"
-            placeholder="Search by customer name or invoice number"
+            placeholder="Search by customer name, sale code, or note"
             value={historySearchQuery}
             onChange={e => setHistorySearchQuery(e.target.value)}
             className="history-search"
           />
-          
-          <select
-            value={selectedCustomerFilter}
-            onChange={e => setSelectedCustomerFilter(e.target.value)}
-            className="customer-filter"
-          >
-            <option value="All">All Customers</option>
-            {customers.map(customer => (
-              <option key={customer.customerId} value={customer.customerId.toString()}>
-                {customer.name}
-              </option>
-            ))}
-          </select>
           
           <select
             value={paymentStatusFilter}
@@ -565,75 +607,126 @@ function Customer() {
             className="status-filter"
           >
             <option value="All">All Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Unpaid">Unpaid</option>
-            <option value="Partial">Partial</option>
+            <option value="PAID">Paid</option>
+            <option value="PARTIAL">Partial</option>
+            <option value="UNPAID">Unpaid</option>
+          </select>
+
+          <select
+            value={historySortDirection}
+            onChange={e => setHistorySortDirection(e.target.value)}
+            className="sort-direction-select"
+          >
+            <option value="desc">Sort by Date (Newest First)</option>
+            <option value="asc">Sort by Date (Oldest First)</option>
+          </select>
+
+          <select
+            value={historySize}
+            onChange={e => {
+              setHistorySize(parseInt(e.target.value));
+              setHistoryPage(0);
+            }}
+            className="page-size-select"
+          >
+            <option value="5">5 per page</option>
+            <option value="10">10 per page</option>
+            <option value="20">20 per page</option>
+            <option value="50">50 per page</option>
           </select>
         </div>
 
-        {/* Summary Statistics */}
-        <div className="payment-summary">
-          <div className="summary-card">
-            <div className="summary-label">Total Amount</div>
-            <div className="summary-value">৳{totalAmount.toLocaleString()}</div>
+        {historyError && (
+          <div className="error-message" style={{color: 'red', padding: '10px', background: '#ffe6e6', borderRadius: '4px', margin: '10px 0'}}>
+            {historyError}
           </div>
-          <div className="summary-card">
-            <div className="summary-label">Total Paid</div>
-            <div className="summary-value paid">৳{totalPaid.toLocaleString()}</div>
+        )}
+
+        {/* Loading indicator */}
+        {historyLoading && (
+          <div className="loading-indicator" style={{textAlign: 'center', padding: '20px'}}>
+            Loading payment history...
           </div>
-          <div className="summary-card">
-            <div className="summary-label">Total Due</div>
-            <div className="summary-value due">৳{totalDue.toLocaleString()}</div>
-          </div>
-        </div>
+        )}
 
         {/* Payment History Table */}
         <div className="history-table-container">
           <table className="history-table">
             <thead>
               <tr>
-                <th>Invoice No</th>
+                <th>Sale Code</th>
                 <th>Customer</th>
                 <th>Date</th>
                 <th>Total Amount</th>
                 <th>Paid Amount</th>
                 <th>Due Amount</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Transaction Type</th>
+                <th>Payment Method</th>
+                <th>Note</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPaymentHistory.length > 0 ? (
-                filteredPaymentHistory.map((payment) => (
-                  <tr key={payment.id}>
-                    <td className="invoice-no">{payment.invoiceNo}</td>
-                    <td>{payment.customerName}</td>
-                    <td>{payment.date}</td>
-                    <td>৳{payment.amount.toLocaleString()}</td>
-                    <td>৳{payment.paid.toLocaleString()}</td>
-                    <td>৳{payment.due.toLocaleString()}</td>
+              {!historyLoading && paymentHistoryData.length > 0 ? (
+                paymentHistoryData.map((payment, index) => (
+                  <tr key={`${payment.saleCode}-${index}`}>
+                    <td className="sale-code">{payment.saleCode || 'N/A'}</td>
+                    <td>{payment.customerName || 'N/A'}</td>
+                    <td>{payment.date || 'N/A'}</td>
+                    <td>৳{(payment.totalAmount || 0).toLocaleString()}</td>
+                    <td>৳{(payment.amountPaid || 0).toLocaleString()}</td>
+                    <td>৳{(payment.dueAmount || 0).toLocaleString()}</td>
                     <td>
-                      <span className={`status-badge ${payment.status.toLowerCase()}`}>
-                        {payment.status}
+                      <span className={`status-badge ${(payment.status || '').toLowerCase()}`}>
+                        {payment.status || 'N/A'}
                       </span>
                     </td>
                     <td>
-                      <button className="action-btn view-btn" title="View Details">👁️</button>
-                      <button className="action-btn edit-btn" title="Edit Payment">✏️</button>
-                      <button className="action-btn print-btn" title="Print Invoice">🖨️</button>
+                      <span className={`transaction-type ${(payment.transactionType || '').toLowerCase()}`}>
+                        {payment.transactionType || 'N/A'}
+                      </span>
+                    </td>
+                    <td>{payment.paymentMethod || 'N/A'}</td>
+                    <td className="note-cell" title={payment.note}>
+                      {payment.note ? (payment.note.length > 30 ? payment.note.substring(0, 30) + '...' : payment.note) : 'N/A'}
                     </td>
                   </tr>
                 ))
-              ) : (
+              ) : !historyLoading ? (
                 <tr>
-                  <td colSpan="8" className="no-data">
+                  <td colSpan="10" className="no-data">
                     No payment history found
                   </td>
                 </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {historyTotalPages > 1 && (
+          <div className="pagination-controls" style={{textAlign: 'center', marginTop: '20px'}}>
+            <button 
+              onClick={() => setHistoryPage(Math.max(0, historyPage - 1))}
+              disabled={historyPage === 0 || historyLoading}
+              className="pagination-btn"
+            >
+              Previous
+            </button>
+            
+            <span className="pagination-info" style={{margin: '0 15px'}}>
+              Page {historyPage + 1} of {historyTotalPages}
+            </span>
+            
+            <button 
+              onClick={() => setHistoryPage(Math.min(historyTotalPages - 1, historyPage + 1))}
+              disabled={historyPage >= historyTotalPages - 1 || historyLoading}
+              className="pagination-btn"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
