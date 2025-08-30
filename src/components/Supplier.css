@@ -104,6 +104,68 @@
   gap: 20px;
 }
 
+/* Suppliers Table */
+.suppliers-table-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.suppliers-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.suppliers-table th {
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 14px;
+}
+
+.suppliers-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #dee2e6;
+  color: #666;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.suppliers-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.suppliers-table tr:last-child td {
+  border-bottom: none;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.action-buttons .edit-btn,
+.action-buttons .delete-btn,
+.action-buttons .view-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  min-width: 60px;
+}
+
+.no-suppliers {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 16px;
+  background: white;
+}
+
 .supplier-card {
   background: white;
   border: 1px solid #ddd;
@@ -229,6 +291,40 @@
   text-align: center;
 }
 
+.payment-info {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border-left: 4px solid #007bff;
+}
+
+.payment-info p {
+  margin: 0;
+  color: #495057;
+  font-weight: 500;
+}
+
+.supplier-due-info {
+  background: #e8f4f8;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+  border-left: 3px solid #17a2b8;
+}
+
+.supplier-due-info p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: #0c5460;
+}
+
+.supplier-due-info .info-text {
+  color: #0c5460;
+  font-style: italic;
+  font-size: 12px;
+}
+
 .modal-content form {
   display: flex;
   flex-direction: column;
@@ -322,6 +418,34 @@
 
   .add-btn, .edit-btn, .delete-btn, .view-btn {
     margin: 2px 0;
+  }
+
+  /* Mobile responsive for suppliers table */
+  .suppliers-table-container {
+    overflow-x: auto;
+  }
+
+  .suppliers-table {
+    min-width: 600px;
+  }
+
+  .suppliers-table th,
+  .suppliers-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .action-buttons .edit-btn,
+  .action-buttons .delete-btn,
+  .action-buttons .view-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    min-width: 50px;
   }
 }
 

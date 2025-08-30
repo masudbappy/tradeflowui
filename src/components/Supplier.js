@@ -7,14 +7,10 @@ function Supplier() {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [showAddSupplier, setShowAddSupplier] = useState(false);
-  const [showEditSupplier, setShowEditSupplier] = useState(false);
   const [newSupplier, setNewSupplier] = useState({ 
     name: '', 
-    contactPerson: '', 
     phoneNumber: '', 
-    email: '', 
     address: '', 
     dueAmount: 0 
   });
@@ -30,6 +26,11 @@ function Supplier() {
     transportCost: 0,
     paidAmount: 0
   });
+
+  // Payment management states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedSupplierForPayment, setSelectedSupplierForPayment] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
 
   // Helper function to make authenticated API calls to supplier service
   const makeSupplierApiCall = useCallback(async (endpoint, options = {}) => {
@@ -101,9 +102,7 @@ function Supplier() {
     try {
       const supplierData = {
         name: newSupplier.name.trim(),
-        contactPerson: newSupplier.contactPerson.trim(),
-        phoneNumber: newSupplier.phoneNumber.trim(),
-        email: newSupplier.email.trim(),
+        contactNumber: newSupplier.phoneNumber.trim() || null,
         address: newSupplier.address.trim(),
         dueAmount: parseFloat(newSupplier.dueAmount) || 0
       };
@@ -115,7 +114,7 @@ function Supplier() {
 
       console.log('Supplier added successfully:', response);
       setSuppliers([...suppliers, response]);
-      setNewSupplier({ name: '', contactPerson: '', phoneNumber: '', email: '', address: '', dueAmount: 0 });
+      setNewSupplier({ name: '', phoneNumber: '', address: '', dueAmount: 0 });
       setShowAddSupplier(false);
       alert('Supplier added successfully!');
     } catch (error) {
@@ -124,60 +123,53 @@ function Supplier() {
     }
   };
 
-  // Edit supplier
-  const handleEditSupplier = async (e) => {
+  // Handle supplier payment (reduce due amount)
+  const handleSupplierPayment = async (e) => {
     e.preventDefault();
     
-    if (!selectedSupplier) return;
-
-    try {
-      const supplierData = {
-        ...selectedSupplier,
-        name: selectedSupplier.name.trim(),
-        contactPerson: selectedSupplier.contactPerson?.trim() || '',
-        phoneNumber: selectedSupplier.phoneNumber?.trim() || '',
-        email: selectedSupplier.email?.trim() || '',
-        address: selectedSupplier.address?.trim() || ''
-      };
-
-      const response = await makeSupplierApiCall(`/api/suppliers/${selectedSupplier.supplierId}`, {
-        method: 'PUT',
-        body: JSON.stringify(supplierData)
-      });
-
-      console.log('Supplier updated successfully:', response);
-      
-      const updatedSuppliers = suppliers.map(s => 
-        s.supplierId === selectedSupplier.supplierId ? response : s
-      );
-      setSuppliers(updatedSuppliers);
-      setSelectedSupplier(null);
-      setShowEditSupplier(false);
-      alert('Supplier updated successfully!');
-    } catch (error) {
-      console.error('Error updating supplier:', error);
-      alert('Failed to update supplier. Please try again.');
+    if (!selectedSupplierForPayment || paymentAmount <= 0) {
+      alert('Please select a supplier and enter a valid payment amount');
+      return;
     }
-  };
 
-  // Delete supplier
-  const handleDeleteSupplier = async (supplierId) => {
-    if (!window.confirm('Are you sure you want to delete this supplier?')) {
+    if (paymentAmount > selectedSupplierForPayment.dueAmount) {
+      alert('Payment amount cannot be greater than due amount');
       return;
     }
 
     try {
-      await makeSupplierApiCall(`/api/suppliers/${supplierId}`, {
-        method: 'DELETE'
+      const newDueAmount = selectedSupplierForPayment.dueAmount - paymentAmount;
+      
+      const supplierData = {
+        name: selectedSupplierForPayment.name,
+        contactNumber: selectedSupplierForPayment.contactNumber || selectedSupplierForPayment.phoneNumber || null,
+        address: selectedSupplierForPayment.address || '',
+        dueAmount: newDueAmount
+      };
+
+      const response = await makeSupplierApiCall(`/api/suppliers/${selectedSupplierForPayment.supplierId}`, {
+        method: 'PUT',
+        body: JSON.stringify(supplierData)
       });
 
-      const updatedSuppliers = suppliers.filter(s => s.supplierId !== supplierId);
+      console.log('Supplier payment processed successfully:', response);
+      
+      // Update suppliers list
+      const updatedSuppliers = suppliers.map(supplier => 
+        supplier.supplierId === selectedSupplierForPayment.supplierId 
+          ? { ...supplier, dueAmount: newDueAmount }
+          : supplier
+      );
       setSuppliers(updatedSuppliers);
-      setSelectedSupplier(null);
-      alert('Supplier deleted successfully!');
+      
+      // Reset payment modal
+      setSelectedSupplierForPayment(null);
+      setPaymentAmount(0);
+      setShowPaymentModal(false);
+      alert(`Payment of ৳${paymentAmount.toLocaleString()} processed successfully!`);
     } catch (error) {
-      console.error('Error deleting supplier:', error);
-      alert('Failed to delete supplier. Please try again.');
+      console.error('Error processing payment:', error);
+      alert('Failed to process payment. Please try again.');
     }
   };
 
@@ -200,17 +192,54 @@ function Supplier() {
         paidAmount: parseFloat(newShipment.paidAmount) || 0
       };
 
-      // Calculate total and due amount
+      // Calculate total amount for shipment record (includes all costs)
       const totalAmount = shipmentData.purchaseAmount + shipmentData.laborCost + shipmentData.transportCost;
-      const dueAmount = totalAmount - shipmentData.paidAmount;
+      
+      // For supplier due calculation, only consider purchase amount (exclude labor & transport costs)
+      const supplierRelatedAmount = shipmentData.purchaseAmount;
+
+      // Find supplier to get existing due amount
+      const supplier = suppliers.find(s => s.name === shipmentData.supplierName);
+      const existingDueAmount = supplier?.dueAmount || 0;
+      
+      // Calculate how much of the paid amount goes to existing due vs new supplier amount
+      let adjustedExistingDue = existingDueAmount;
+      let adjustedPaidAmount = shipmentData.paidAmount;
+      let actualPaymentToExistingDue = 0;
+
+      // If there's paid amount and existing due, apply payment to existing due first
+      if (adjustedPaidAmount > 0 && existingDueAmount > 0) {
+        actualPaymentToExistingDue = Math.min(adjustedPaidAmount, existingDueAmount);
+        adjustedExistingDue = existingDueAmount - actualPaymentToExistingDue;
+        adjustedPaidAmount = Math.max(0, adjustedPaidAmount - actualPaymentToExistingDue);
+      }
+
+      // Calculate supplier due for this shipment (only purchase amount, not labor/transport)
+      const supplierDueForShipment = Math.max(0, supplierRelatedAmount - adjustedPaidAmount);
+      
+      // Calculate shipment due (includes all costs for shipment record)
+      const totalShipmentDue = totalAmount - shipmentData.paidAmount;
+      
+      // Total supplier due amount = adjusted existing due + supplier-related due only
+      const finalSupplierDueAmount = adjustedExistingDue + supplierDueForShipment;
 
       const shipmentPayload = {
         ...shipmentData,
         totalAmount,
-        dueAmount
+        dueAmount: totalShipmentDue // This is the total shipment due for record keeping
       };
 
       console.log('Adding shipment with payload:', shipmentPayload);
+      console.log('Payment allocation:', {
+        totalPaid: shipmentData.paidAmount,
+        paidToExistingDue: actualPaymentToExistingDue,
+        paidToNewPurchase: adjustedPaidAmount,
+        supplierDueForShipment: supplierDueForShipment,
+        finalSupplierDue: finalSupplierDueAmount,
+        laborCost: shipmentData.laborCost,
+        transportCost: shipmentData.transportCost,
+        note: 'Labor and transport costs excluded from supplier due'
+      });
 
       const response = await makeSupplierApiCall('/api/suppliers/shipments', {
         method: 'POST',
@@ -219,6 +248,51 @@ function Supplier() {
 
       console.log('Shipment added successfully:', response);
       setShipments([response, ...shipments]);
+      
+      // Update supplier's due amount in frontend with the final calculated amount
+      const updatedSuppliers = suppliers.map(supplierItem => {
+        if (supplierItem.name === shipmentData.supplierName) {
+          return { ...supplierItem, dueAmount: finalSupplierDueAmount };
+        }
+        return supplierItem;
+      });
+      setSuppliers(updatedSuppliers);
+      
+      // Update supplier's due amount in backend (set to final amount, not add)
+      try {
+        const supplierToUpdate = suppliers.find(s => s.name === shipmentData.supplierName);
+        if (supplierToUpdate) {
+          const supplierData = {
+            name: supplierToUpdate.name,
+            contactNumber: supplierToUpdate.contactNumber || supplierToUpdate.phoneNumber || null,
+            address: supplierToUpdate.address || '',
+            dueAmount: finalSupplierDueAmount
+          };
+
+          await makeSupplierApiCall(`/api/suppliers/${supplierToUpdate.supplierId}`, {
+            method: 'PUT',
+            body: JSON.stringify(supplierData)
+          });
+        }
+      } catch (error) {
+        console.error('Failed to update supplier due amount in backend:', error);
+        // Note: Frontend is already updated, this is just a sync issue
+      }
+      
+      // Show summary message
+      let summaryMessage = 'Shipment added successfully!';
+      summaryMessage += `\nTotal Shipment: ৳${totalAmount.toLocaleString()} (Purchase: ৳${supplierRelatedAmount.toLocaleString()}, Labor: ৳${shipmentData.laborCost.toLocaleString()}, Transport: ৳${shipmentData.transportCost.toLocaleString()})`;
+      
+      if (actualPaymentToExistingDue > 0) {
+        summaryMessage += `\n৳${actualPaymentToExistingDue.toLocaleString()} was applied to existing supplier due.`;
+      }
+      if (adjustedPaidAmount > 0) {
+        summaryMessage += `\n৳${adjustedPaidAmount.toLocaleString()} was applied to purchase amount.`;
+      }
+      
+      summaryMessage += `\nSupplier due updated by: ৳${supplierDueForShipment.toLocaleString()} (Labor & Transport costs excluded)`;
+      summaryMessage += `\nFinal supplier due: ৳${finalSupplierDueAmount.toLocaleString()}`;
+      
       setNewShipment({
         supplierName: '',
         date: new Date().toISOString().split('T')[0],
@@ -228,7 +302,8 @@ function Supplier() {
         paidAmount: 0
       });
       setShowShipmentModal(false);
-      alert('Shipment added successfully!');
+      
+      alert(summaryMessage);
     } catch (error) {
       console.error('Error adding shipment:', error);
       alert('Failed to add shipment. Please try again.');
@@ -238,8 +313,8 @@ function Supplier() {
   // Filter suppliers for search
   const filteredSuppliers = suppliers.filter(supplier => 
     (supplier.name && supplier.name.toLowerCase().includes(supplierSearchQuery.toLowerCase())) ||
-    (supplier.phoneNumber && supplier.phoneNumber.includes(supplierSearchQuery)) ||
-    (supplier.contactPerson && supplier.contactPerson.toLowerCase().includes(supplierSearchQuery.toLowerCase()))
+    (supplier.contactNumber && supplier.contactNumber.includes(supplierSearchQuery)) ||
+    (supplier.phoneNumber && supplier.phoneNumber.includes(supplierSearchQuery))
   );
 
   return (
@@ -273,42 +348,45 @@ function Supplier() {
         {loading ? (
           <div className="loading">Loading suppliers...</div>
         ) : (
-          <div className="suppliers-grid">
-            {filteredSuppliers.map(supplier => (
-              <div key={supplier.supplierId} className="supplier-card">
-                <div className="supplier-info">
-                  <h4>{supplier.name}</h4>
-                  <p><strong>Contact:</strong> {supplier.contactPerson || 'N/A'}</p>
-                  <p><strong>Phone:</strong> {supplier.phoneNumber || 'N/A'}</p>
-                  <p><strong>Email:</strong> {supplier.email || 'N/A'}</p>
-                  <p><strong>Address:</strong> {supplier.address || 'N/A'}</p>
-                  <p><strong>Due Amount:</strong> ৳{supplier.dueAmount?.toLocaleString() || '0'}</p>
-                </div>
-                <div className="supplier-actions">
-                  <button 
-                    className="edit-btn"
-                    onClick={() => {
-                      setSelectedSupplier(supplier);
-                      setShowEditSupplier(true);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    className="delete-btn"
-                    onClick={() => handleDeleteSupplier(supplier.supplierId)}
-                  >
-                    Delete
-                  </button>
-                  <button 
-                    className="view-btn"
-                    onClick={() => setSelectedSupplier(supplier)}
-                  >
-                    View Details
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="suppliers-table-container">
+            <table className="suppliers-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Contact Number</th>
+                  <th>Address</th>
+                  <th>Due Amount</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSuppliers.map(supplier => (
+                  <tr key={supplier.supplierId}>
+                    <td>{supplier.name}</td>
+                    <td>{supplier.contactNumber || supplier.phoneNumber || 'N/A'}</td>
+                    <td>{supplier.address || 'N/A'}</td>
+                    <td>৳{supplier.dueAmount?.toLocaleString() || '0'}</td>
+                    <td>
+                      {supplier.dueAmount > 0 && (
+                        <button 
+                          className="edit-btn"
+                          onClick={() => {
+                            setSelectedSupplierForPayment(supplier);
+                            setPaymentAmount(0);
+                            setShowPaymentModal(true);
+                          }}
+                        >
+                          Pay
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredSuppliers.length === 0 && (
+              <div className="no-suppliers">No suppliers found</div>
+            )}
           </div>
         )}
       </div>
@@ -342,7 +420,6 @@ function Supplier() {
                     <th>Transport Cost</th>
                     <th>Total Amount</th>
                     <th>Paid Amount</th>
-                    <th>Due Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -355,7 +432,6 @@ function Supplier() {
                       <td>৳{shipment.transportCost?.toLocaleString()}</td>
                       <td>৳{shipment.totalAmount?.toLocaleString()}</td>
                       <td>৳{shipment.paidAmount?.toLocaleString()}</td>
-                      <td>৳{shipment.dueAmount?.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -378,20 +454,9 @@ function Supplier() {
                 required
               />
               <input 
-                placeholder="Contact Person" 
-                value={newSupplier.contactPerson} 
-                onChange={e => setNewSupplier({...newSupplier, contactPerson: e.target.value})}
-              />
-              <input 
-                placeholder="Phone Number" 
+                placeholder="Contact Number" 
                 value={newSupplier.phoneNumber} 
                 onChange={e => setNewSupplier({...newSupplier, phoneNumber: e.target.value})}
-              />
-              <input 
-                placeholder="Email" 
-                type="email"
-                value={newSupplier.email} 
-                onChange={e => setNewSupplier({...newSupplier, email: e.target.value})}
               />
               <textarea 
                 placeholder="Address" 
@@ -416,46 +481,32 @@ function Supplier() {
         </div>
       )}
 
-      {/* Edit Supplier Modal */}
-      {showEditSupplier && selectedSupplier && (
+      {/* Supplier Payment Modal */}
+      {showPaymentModal && selectedSupplierForPayment && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h4>Edit Supplier</h4>
-            <form onSubmit={handleEditSupplier}>
+            <h4>Process Payment - {selectedSupplierForPayment.name}</h4>
+            <div className="payment-info">
+              <p><strong>Current Due Amount:</strong> ৳{selectedSupplierForPayment.dueAmount?.toLocaleString() || '0'}</p>
+            </div>
+            <form onSubmit={handleSupplierPayment}>
               <input 
-                placeholder="Supplier Name *" 
-                value={selectedSupplier.name || ''} 
-                onChange={e => setSelectedSupplier({...selectedSupplier, name: e.target.value})}
+                placeholder="Payment Amount *" 
+                type="number"
+                min="0"
+                max={selectedSupplierForPayment.dueAmount}
+                step="0.01"
+                value={paymentAmount} 
+                onChange={e => setPaymentAmount(parseFloat(e.target.value) || 0)}
                 required
-              />
-              <input 
-                placeholder="Contact Person" 
-                value={selectedSupplier.contactPerson || ''} 
-                onChange={e => setSelectedSupplier({...selectedSupplier, contactPerson: e.target.value})}
-              />
-              <input 
-                placeholder="Phone Number" 
-                value={selectedSupplier.phoneNumber || ''} 
-                onChange={e => setSelectedSupplier({...selectedSupplier, phoneNumber: e.target.value})}
-              />
-              <input 
-                placeholder="Email" 
-                type="email"
-                value={selectedSupplier.email || ''} 
-                onChange={e => setSelectedSupplier({...selectedSupplier, email: e.target.value})}
-              />
-              <textarea 
-                placeholder="Address" 
-                value={selectedSupplier.address || ''} 
-                onChange={e => setSelectedSupplier({...selectedSupplier, address: e.target.value})}
-                rows="3"
               />
               <div className="modal-actions">
                 <button type="button" onClick={() => {
-                  setShowEditSupplier(false);
-                  setSelectedSupplier(null);
+                  setShowPaymentModal(false);
+                  setSelectedSupplierForPayment(null);
+                  setPaymentAmount(0);
                 }}>Cancel</button>
-                <button type="submit">Update Supplier</button>
+                <button type="submit">Process Payment</button>
               </div>
             </form>
           </div>
@@ -482,6 +533,17 @@ function Supplier() {
                     </option>
                   ))}
                 </select>
+                {newShipment.supplierName && (
+                  <div className="supplier-due-info">
+                    <p><strong>Current Due Amount:</strong> ৳{
+                      suppliers.find(s => s.name === newShipment.supplierName)?.dueAmount?.toLocaleString() || '0'
+                    }</p>
+                    {suppliers.find(s => s.name === newShipment.supplierName)?.dueAmount > 0 && (
+                      <p className="info-text">💡 Any payment will first reduce existing due amount</p>
+                    )}
+                    <p className="info-text">📌 Only purchase amount affects supplier due (Labor & Transport costs excluded)</p>
+                  </div>
+                )}
               </div>
               
               <div className="form-group">
