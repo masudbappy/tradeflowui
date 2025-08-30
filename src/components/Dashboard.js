@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import Inventory from './Inventory';
+import Supplier from './Supplier';
 import SalesInvoice from './SalesInvoice';
 import Customer from './Customer';
 import Report from './Report';
@@ -70,6 +71,10 @@ const Dashboard = ({ onLogout }) => {
             <i className="fas fa-boxes"></i>
             <span>Inventory</span>
           </li>
+          <li className={view === 'supplier' ? 'active' : ''} onClick={() => {setView('supplier'); setSidebarOpen(false);}}>
+            <i className="fas fa-truck"></i>
+            <span>Suppliers</span>
+          </li>
           <li className={view === 'sales' ? 'active' : ''} onClick={() => {setView('sales'); setSidebarOpen(false);}}>
             <i className="fas fa-shopping-cart"></i>
             <span>Sales</span>
@@ -124,6 +129,7 @@ const Dashboard = ({ onLogout }) => {
           </>
         )}
   {view === 'inventory' && <Inventory />}
+  {view === 'supplier' && <Supplier />}
   {view === 'sales' && <SalesInvoice />}
   {view === 'customer' && <Customer />}
   {view === 'report' && <Report />}
