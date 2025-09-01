@@ -122,10 +122,6 @@ function Customer() {
       if (paymentStatusFilter !== 'All') {
         params.append('status', paymentStatusFilter);
       }
-      
-      if (paymentStatusFilter !== 'All') {
-        params.append('transactionType', paymentStatusFilter);
-      }
 
       if (historySearchQuery.trim()) {
         // Try the search parameter that your backend expects
@@ -661,7 +657,6 @@ function Customer() {
                 <th>Paid Amount</th>
                 <th>Due Amount</th>
                 <th>Status</th>
-                <th>Transaction Type</th>
                 <th>Payment Method</th>
                 <th>Note</th>
               </tr>
@@ -681,11 +676,6 @@ function Customer() {
                         {payment.status || 'N/A'}
                       </span>
                     </td>
-                    <td>
-                      <span className={`transaction-type ${(payment.transactionType || '').toLowerCase()}`}>
-                        {payment.transactionType || 'N/A'}
-                      </span>
-                    </td>
                     <td>{payment.paymentMethod || 'N/A'}</td>
                     <td className="note-cell" title={payment.note}>
                       {payment.note ? (payment.note.length > 30 ? payment.note.substring(0, 30) + '...' : payment.note) : 'N/A'}
@@ -694,7 +684,7 @@ function Customer() {
                 ))
               ) : !historyLoading ? (
                 <tr>
-                  <td colSpan="10" className="no-data">
+                  <td colSpan="9" className="no-data">
                     No payment history found
                   </td>
                 </tr>
