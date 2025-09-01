@@ -591,7 +591,7 @@ function Customer() {
         <div className="history-controls">
           <input
             type="text"
-            placeholder="Search by customer name, sale code, or note"
+            placeholder="Search by customer name, sale code, or phone no"
             value={historySearchQuery}
             onChange={e => setHistorySearchQuery(e.target.value)}
             className="history-search"
