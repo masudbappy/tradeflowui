@@ -323,120 +323,134 @@ function Supplier() {
       
       {/* Supplier Management Section */}
       <div className="supplier-section">
-        <div className="section-header">
-          <h3>Suppliers</h3>
-          <button 
-            className="add-btn" 
-            onClick={() => setShowAddSupplier(true)}
-          >
-            Add New Supplier
-          </button>
-        </div>
-
-        {/* Search Suppliers */}
-        <div className="search-section">
+        <h3>Suppliers</h3>
+        
+        {/* Search and Add Controls */}
+        <div className="supplier-controls">
           <input
             type="text"
             placeholder="Search suppliers by name, contact person, or phone..."
             value={supplierSearchQuery}
             onChange={e => setSupplierSearchQuery(e.target.value)}
-            className="search-input"
+            className="supplier-search"
           />
+          <button 
+            className="add-supplier-btn" 
+            onClick={() => setShowAddSupplier(true)}
+          >
+            + Add New Supplier
+          </button>
         </div>
 
-        {/* Suppliers List */}
-        {loading ? (
-          <div className="loading">Loading suppliers...</div>
-        ) : (
-          <div className="suppliers-table-container">
-            <table className="suppliers-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Contact Number</th>
-                  <th>Address</th>
-                  <th>Due Amount</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSuppliers.map(supplier => (
+        {/* Loading indicator */}
+        {loading && (
+          <div className="loading-indicator" style={{textAlign: 'center', padding: '20px'}}>
+            Loading suppliers...
+          </div>
+        )}
+
+        {/* Suppliers Table */}
+        <div className="suppliers-table-container">
+          <table className="suppliers-table">
+            <thead>
+              <tr>
+                <th>Supplier ID</th>
+                <th>Name</th>
+                <th>Contact Number</th>
+                <th>Address</th>
+                <th>Due Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!loading && filteredSuppliers.length > 0 ? (
+                filteredSuppliers.map(supplier => (
                   <tr key={supplier.supplierId}>
-                    <td>{supplier.name}</td>
+                    <td className="supplier-id">{supplier.supplierId}</td>
+                    <td className="supplier-name">{supplier.name}</td>
                     <td>{supplier.contactNumber || supplier.phoneNumber || 'N/A'}</td>
-                    <td>{supplier.address || 'N/A'}</td>
-                    <td>৳{supplier.dueAmount?.toLocaleString() || '0'}</td>
-                    <td>
+                    <td className="address-cell" title={supplier.address}>
+                      {supplier.address ? (supplier.address.length > 30 ? supplier.address.substring(0, 30) + '...' : supplier.address) : 'N/A'}
+                    </td>
+                    <td className="due-amount">৳{supplier.dueAmount?.toLocaleString() || '0'}</td>
+                    <td className="actions-cell">
                       {supplier.dueAmount > 0 && (
                         <button 
-                          className="edit-btn"
+                          className="payment-btn"
                           onClick={() => {
                             setSelectedSupplierForPayment(supplier);
                             setPaymentAmount(0);
                             setShowPaymentModal(true);
                           }}
                         >
-                          Pay
+                          💰 Pay
                         </button>
                       )}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredSuppliers.length === 0 && (
-              <div className="no-suppliers">No suppliers found</div>
-            )}
-          </div>
-        )}
+                ))
+              ) : !loading ? (
+                <tr>
+                  <td colSpan="6" className="no-data">
+                    No suppliers found
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Shipment Management Section */}
       <div className="shipment-section">
-        <div className="section-header">
-          <h3>Shipment Management</h3>
+        <h3>Shipment Management</h3>
+        
+        {/* Add Shipment Control */}
+        <div className="shipment-controls">
           <button 
-            className="add-btn" 
+            className="add-shipment-btn" 
             onClick={() => setShowShipmentModal(true)}
           >
-            Add New Shipment
+            + Add New Shipment
           </button>
         </div>
 
         {/* Shipment List */}
-        <div className="shipment-list">
+        <div className="shipment-table-container">
           <h4>Recent Shipments</h4>
           {shipments.length === 0 ? (
-            <p>No shipments recorded yet.</p>
-          ) : (
-            <div className="shipment-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Supplier Name</th>
-                    <th>Date</th>
-                    <th>Purchase Amount</th>
-                    <th>Labor Cost</th>
-                    <th>Transport Cost</th>
-                    <th>Total Amount</th>
-                    <th>Paid Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shipments.map((shipment, idx) => (
-                    <tr key={idx}>
-                      <td>{shipment.supplierName}</td>
-                      <td>{shipment.date}</td>
-                      <td>৳{shipment.purchaseAmount?.toLocaleString()}</td>
-                      <td>৳{shipment.laborCost?.toLocaleString()}</td>
-                      <td>৳{shipment.transportCost?.toLocaleString()}</td>
-                      <td>৳{shipment.totalAmount?.toLocaleString()}</td>
-                      <td>৳{shipment.paidAmount?.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="no-data" style={{textAlign: 'center', padding: '2rem', color: '#666'}}>
+              No shipments recorded yet.
             </div>
+          ) : (
+            <table className="shipment-table">
+              <thead>
+                <tr>
+                  <th>Supplier Name</th>
+                  <th>Date</th>
+                  <th>Purchase Amount</th>
+                  <th>Labor Cost</th>
+                  <th>Transport Cost</th>
+                  <th>Total Amount</th>
+                  <th>Paid Amount</th>
+                  <th>Due Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shipments.map((shipment, idx) => (
+                  <tr key={idx}>
+                    <td className="supplier-name">{shipment.supplierName}</td>
+                    <td>{shipment.date}</td>
+                    <td>৳{shipment.purchaseAmount?.toLocaleString()}</td>
+                    <td>৳{shipment.laborCost?.toLocaleString()}</td>
+                    <td>৳{shipment.transportCost?.toLocaleString()}</td>
+                    <td className="total-amount">৳{shipment.totalAmount?.toLocaleString()}</td>
+                    <td>৳{shipment.paidAmount?.toLocaleString()}</td>
+                    <td className="due-amount">৳{shipment.dueAmount?.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>

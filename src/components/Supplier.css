@@ -1,103 +1,349 @@
 .supplier-container {
-  padding: 20px;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
+  background: #f7f8fa;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 
 .supplier-container h2 {
   color: #333;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
   text-align: center;
+  font-size: 1.8rem;
 }
 
 /* Section Styling */
 .supplier-section, .shipment-section {
-  margin-bottom: 40px;
-  padding: 20px;
-  background: #f9f9f9;
+  background: #fff;
+  padding: 1.5rem;
   border-radius: 8px;
+  margin-bottom: 2rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.section-header {
+.supplier-section h3, .shipment-section h3 {
+  color: #2e7d32;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+/* Controls Styling */
+.supplier-controls, .shipment-controls {
   display: flex;
-  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
   align-items: center;
-  margin-bottom: 20px;
 }
 
-.section-header h3 {
-  color: #333;
-  margin: 0;
+.supplier-search {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
 }
 
-/* Button Styling */
-.add-btn, .edit-btn, .delete-btn, .view-btn {
-  padding: 8px 16px;
+.supplier-search:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+}
+
+.add-supplier-btn, .add-shipment-btn {
+  background: #2e7d32;
+  color: #fff;
   border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
+
+.add-supplier-btn:hover, .add-shipment-btn:hover {
+  background: #1b5e20;
+}
+
+/* Table Container Styling */
+.suppliers-table-container, .shipment-table-container {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.shipment-table-container h4 {
+  color: #333;
+  margin-bottom: 1rem;
+  padding-left: 0.5rem;
+}
+
+/* Table Styling */
+.suppliers-table, .shipment-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.suppliers-table thead, .shipment-table thead {
+  background: linear-gradient(135deg, #2e7d32, #388e3c);
+  color: #fff;
+}
+
+.suppliers-table th, .shipment-table th {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.suppliers-table td, .shipment-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.suppliers-table tbody tr:hover, .shipment-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+/* Cell Specific Styling */
+.supplier-id {
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.supplier-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.address-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.due-amount {
+  font-weight: 600;
+  color: #d32f2f;
+}
+
+.total-amount {
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+/* Payment Button */
+.payment-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  margin: 0 5px;
-  transition: background-color 0.3s;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
 }
 
-.add-btn {
-  background-color: #28a745;
-  color: white;
+.payment-btn:hover {
+  background: #218838;
 }
 
-.add-btn:hover {
-  background-color: #218838;
+/* No Data Styling */
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
 }
 
-.edit-btn {
-  background-color: #ffc107;
-  color: #212529;
+/* Loading Indicator */
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-.edit-btn:hover {
-  background-color: #e0a800;
+.modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  min-width: 400px;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.delete-btn {
-  background-color: #dc3545;
-  color: white;
+.modal-content h4 {
+  color: #333;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
-.delete-btn:hover {
-  background-color: #c82333;
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.view-btn {
-  background-color: #007bff;
-  color: white;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.view-btn:hover {
-  background-color: #0056b3;
+.form-group label {
+  font-weight: 600;
+  color: #333;
 }
 
-/* Search Section */
-.search-section {
-  margin-bottom: 20px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px;
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  padding: 0.75rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
+  border-radius: 5px;
+  font-size: 1rem;
 }
 
-.search-input:focus {
+.modal-content input:focus,
+.modal-content select:focus,
+.modal-content textarea:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
 }
 
-/* Suppliers Grid */
+.supplier-due-info {
+  background: #e8f5e8;
+  padding: 1rem;
+  border-radius: 5px;
+  border-left: 4px solid #2e7d32;
+  margin-top: 0.5rem;
+}
+
+.supplier-due-info p {
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.info-text {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.payment-info {
+  background: #f0f8ff;
+  padding: 1rem;
+  border-radius: 5px;
+  border-left: 4px solid #007bff;
+  margin-bottom: 1rem;
+}
+
+.payment-info p {
+  margin: 0;
+  color: #333;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.modal-actions button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
+
+.modal-actions button[type="submit"] {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.modal-actions button[type="submit"]:hover {
+  background: #1b5e20;
+}
+
+.modal-actions button[type="submit"]:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.modal-actions button[type="button"] {
+  background: #f8f9fa;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.modal-actions button[type="button"]:hover {
+  background: #e9ecef;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .supplier-container {
+    padding: 1rem;
+  }
+  
+  .supplier-controls, .shipment-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .supplier-search {
+    width: 100%;
+  }
+  
+  .suppliers-table-container, .shipment-table-container {
+    overflow-x: auto;
+  }
+  
+  .modal-content {
+    min-width: 300px;
+    margin: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .suppliers-table th, .suppliers-table td,
+  .shipment-table th, .shipment-table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .address-cell {
+    max-width: 150px;
+  }
+}
 .suppliers-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
