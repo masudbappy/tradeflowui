@@ -116,9 +116,12 @@ function Report() {
             />
           </div>
           
-          <button className="btn btn-primary" onClick={handleGenerateReport}>
-            Generate Report
-          </button>
+          <div className="form-group button-group">
+            <label>&nbsp;</label>
+            <button className="btn btn-primary" onClick={handleGenerateReport}>
+              Generate Report
+            </button>
+          </div>
         </div>
         
         <div className="controls-bottom">

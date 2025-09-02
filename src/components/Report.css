@@ -63,6 +63,10 @@
   min-width: 180px;
 }
 
+.form-group.button-group {
+  justify-content: flex-end;
+}
+
 .form-group label {
   font-weight: 600;
   color: #495057;
