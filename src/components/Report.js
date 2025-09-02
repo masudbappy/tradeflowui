@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import './Report.css';
+import authService from '../services/authService';
 
 const reportTypes = [
-  'Daily Sales Report',
-  'Daily Cost Report',
-  'Inventory Status Report',
-  'Accounts Receivable Report',
+  'Profit & Loss Report',
 ];
 
 const today = new Date().toISOString().slice(0, 10);
@@ -14,42 +12,67 @@ function Report() {
   const [type, setType] = useState(reportTypes[0]);
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
-  const [search, setSearch] = useState('');
 
-  // Dummy data for demonstration
-  const salesData = [
-    { invoiceNo: 'INV-1001', customer: 'Karim Traders', date: '2025-08-14', total: 150000, paid: 150000, method: 'Cash' },
-    { invoiceNo: 'INV-1002', customer: 'Rahman Steel', date: '2025-08-14', total: 120000, paid: 120000, method: 'Bank' },
-  ];
-  const costData = [
-    { expenseId: 'EXP-502', supplier: 'Steel Supply Co.', date: '2025-08-14', type: 'Raw Material', amount: 75000 },
-    { expenseId: 'EXP-503', supplier: 'Transport Ltd.', date: '2025-08-14', type: 'Logistics', amount: 12000 },
-  ];
-  const inventoryData = [
-    { name: 'Flat Bar', size: '2 in', type: 'MS', stock: 3.5, unit: 'Ton', lowStock: 2, status: 'Warning' },
-    { name: 'Angle', size: '1.5 in', type: 'MS', stock: 5.2, unit: 'Ton', lowStock: 1, status: 'OK' },
-  ];
-  const receivableData = [
-    { invoiceNo: 'INV-1007', customer: 'Rahman Steel', date: '2025-08-13', total: 120000, paid: 0, outstanding: 120000 },
-    { invoiceNo: 'INV-1008', customer: 'Karim Traders', date: '2025-08-13', total: 90000, paid: 0, outstanding: 90000 },
-  ];
+  // P&L Report states
+  const [pnlData, setPnlData] = useState(null);
+  const [pnlLoading, setPnlLoading] = useState(false);
+  const [pnlError, setPnlError] = useState(null);
 
-  // Filtering logic
-  const filterRows = (rows, keys) => {
-    return rows.filter(row => {
-      // Text search filter
-      const textMatch = keys.some(key => 
-        row[key].toString().toLowerCase().includes(search.toLowerCase())
-      );
+  // Helper function to make authenticated API calls
+  const makeApiCall = useCallback(async (endpoint, options = {}) => {
+    const url = `http://localhost:8081${endpoint}`;
+    
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeader(),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        authService.logout();
+        throw new Error('Authentication failed');
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  }, []);
+
+  // Fetch P&L data
+  const fetchPnlData = async () => {
+    try {
+      setPnlLoading(true);
+      setPnlError(null);
+
+      const endpoint = `/api/pnl?startDate=${fromDate}&endDate=${toDate}`;
+      console.log('Fetching P&L data from:', endpoint);
       
-      // Date range filter
-      const rowDate = new Date(row.date);
-      const fromDateObj = new Date(fromDate);
-      const toDateObj = new Date(toDate);
-      const dateMatch = rowDate >= fromDateObj && rowDate <= toDateObj;
+      const response = await makeApiCall(endpoint);
+      console.log('P&L response:', response);
       
-      return textMatch && dateMatch;
-    });
+      setPnlData(response);
+    } catch (error) {
+      console.error('Error fetching P&L data:', error);
+      setPnlError(error.message);
+    } finally {
+      setPnlLoading(false);
+    }
+  };
+
+  // Generate report function
+  const handleGenerateReport = () => {
+    if (type === 'Profit & Loss Report') {
+      fetchPnlData();
+    } else {
+      // Handle other report types as needed
+      console.log(`Generating ${type} for ${fromDate} to ${toDate}`);
+    }
   };
 
   // Export logic (dummy)
@@ -57,164 +80,167 @@ function Report() {
     alert(`Exporting as ${type}`);
   };
 
-  // Sorting logic (dummy)
-  // ...existing code...
-
   return (
     <div className="report-container">
+      <div className="report-header">
+        <h1>📊 Report Management</h1>
+        <p>Generate comprehensive financial reports and analytics</p>
+      </div>
+
       <div className="report-controls">
-        {/* First Row: Report Type, Date Range, Generate Button */}
-        <div className="controls-row">
-          <select value={type} onChange={e => setType(e.target.value)} className="report-type-select">
-            {reportTypes.map((rt, idx) => <option key={idx} value={rt}>{rt}</option>)}
-          </select>
-          <div className="date-range">
-            <label>From:</label>
-            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
-            <label>To:</label>
-            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} />
+        <div className="controls-top">
+          <div className="form-group">
+            <label>Report Type:</label>
+            <select value={type} onChange={e => setType(e.target.value)} className="form-select">
+              {reportTypes.map((rt, idx) => <option key={idx} value={rt}>{rt}</option>)}
+            </select>
           </div>
-          <button className="generate-btn">Generate Report</button>
+          
+          <div className="form-group">
+            <label>From Date:</label>
+            <input 
+              type="date" 
+              value={fromDate} 
+              onChange={e => setFromDate(e.target.value)}
+              className="form-input" 
+            />
+          </div>
+          
+          <div className="form-group">
+            <label>To Date:</label>
+            <input 
+              type="date" 
+              value={toDate} 
+              onChange={e => setToDate(e.target.value)}
+              className="form-input" 
+            />
+          </div>
+          
+          <button className="btn btn-primary" onClick={handleGenerateReport}>
+            Generate Report
+          </button>
         </div>
         
-        {/* Second Row: Search and Export Options */}
-        <div className="controls-row">
-          <input 
-            className="search-box" 
-            type="text" 
-            placeholder="Search by Customer, Invoice, or any field..." 
-            value={search} 
-            onChange={e => setSearch(e.target.value)} 
-          />
-          <div className="export-group">
-            <button className="export-btn pdf" onClick={() => handleExport('PDF')}>📄 PDF</button>
-            <button className="export-btn excel" onClick={() => handleExport('Excel')}>📊 Excel</button>
-            <button className="export-btn print" onClick={() => window.print()}>🖨️ Print</button>
+        <div className="controls-bottom">
+          <div className="export-actions">
+            <button className="btn btn-export pdf" onClick={() => handleExport('PDF')}>
+              📄 Export PDF
+            </button>
+            <button className="btn btn-export excel" onClick={() => handleExport('Excel')}>
+              📊 Export Excel
+            </button>
+            <button className="btn btn-export print" onClick={() => window.print()}>
+              🖨️ Print Report
+            </button>
           </div>
         </div>
       </div>
-      {/* Report Sections */}
-      {type === 'Daily Sales Report' && (
-        <div className="report-section">
-          <div className="summary-cards">
-            <div className="card">Total Sales: ৳ {salesData.reduce((sum, r) => sum + r.total, 0)}</div>
-            <div className="card">Total Invoices: {salesData.length}</div>
-            <div className="card">Average Invoice Value: ৳ {salesData.length ? Math.round(salesData.reduce((sum, r) => sum + r.total, 0) / salesData.length) : 0}</div>
+
+      {/* Profit & Loss Report Content */}
+      <div className="report-content">
+        {pnlLoading && (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading Profit & Loss data...</p>
           </div>
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>Invoice No</th>
-                <th>Customer Name</th>
-                <th>Date</th>
-                <th>Total Amount</th>
-                <th>Paid Amount</th>
-                <th>Payment Method</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterRows(salesData, ['invoiceNo', 'customer']).map((row, idx) => (
-                <tr key={idx}>
-                  <td>{row.invoiceNo}</td>
-                  <td>{row.customer}</td>
-                  <td>{row.date}</td>
-                  <td>৳ {row.total}</td>
-                  <td>৳ {row.paid}</td>
-                  <td>{row.method}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {type === 'Daily Cost Report' && (
-        <div className="report-section">
-          <div className="summary-cards">
-            <div className="card">Total Cost: ৳ {costData.reduce((sum, r) => sum + r.amount, 0)}</div>
-            <div className="card">No. of Transactions: {costData.length}</div>
+        )}
+        
+        {pnlError && (
+          <div className="error-container">
+            <div className="error-icon">⚠️</div>
+            <p>Error: {pnlError}</p>
           </div>
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>Expense ID</th>
-                <th>Supplier</th>
-                <th>Date</th>
-                <th>Expense Type</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterRows(costData, ['expenseId', 'supplier']).map((row, idx) => (
-                <tr key={idx}>
-                  <td>{row.expenseId}</td>
-                  <td>{row.supplier}</td>
-                  <td>{row.date}</td>
-                  <td>{row.type}</td>
-                  <td>৳ {row.amount}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {type === 'Inventory Status Report' && (
-        <div className="report-section">
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>Product Name</th>
-                <th>Size</th>
-                <th>Type</th>
-                <th>Current Stock</th>
-                <th>Unit</th>
-                <th>Low Stock Level</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventoryData.map((row, idx) => (
-                <tr key={idx} className={row.status === 'Warning' ? 'warning-row' : ''}>
-                  <td>{row.name}</td>
-                  <td>{row.size}</td>
-                  <td>{row.type}</td>
-                  <td>{row.stock}</td>
-                  <td>{row.unit}</td>
-                  <td>{row.lowStock} {row.unit}</td>
-                  <td>{row.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {type === 'Accounts Receivable Report' && (
-        <div className="report-section">
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>Invoice No</th>
-                <th>Customer Name</th>
-                <th>Date</th>
-                <th>Total Amount</th>
-                <th>Paid Amount</th>
-                <th>Outstanding Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterRows(receivableData, ['invoiceNo', 'customer']).map((row, idx) => (
-                <tr key={idx}>
-                  <td>{row.invoiceNo}</td>
-                  <td>{row.customer}</td>
-                  <td>{row.date}</td>
-                  <td>৳ {row.total}</td>
-                  <td>৳ {row.paid}</td>
-                  <td>৳ {row.outstanding}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        )}
+        
+        {pnlData && !pnlLoading && (
+          <div className="report-results">
+            {/* Summary Cards */}
+            <div className="summary-section">
+              <h3>📈 Financial Summary</h3>
+              <div className="summary-cards">
+                <div className="summary-card revenue">
+                  <div className="card-icon">💰</div>
+                  <div className="card-content">
+                    <h4>Total Revenue</h4>
+                    <p>৳{pnlData.summary.totalRevenue?.toLocaleString() || '0'}</p>
+                  </div>
+                </div>
+                <div className="summary-card cost">
+                  <div className="card-icon">💸</div>
+                  <div className="card-content">
+                    <h4>Total Cost</h4>
+                    <p>৳{pnlData.summary.totalCost?.toLocaleString() || '0'}</p>
+                  </div>
+                </div>
+                <div className="summary-card profit">
+                  <div className="card-icon">📊</div>
+                  <div className="card-content">
+                    <h4>Total Profit</h4>
+                    <p className={pnlData.summary.totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}>
+                      ৳{pnlData.summary.totalProfit?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                </div>
+                <div className="summary-card quantity">
+                  <div className="card-icon">📦</div>
+                  <div className="card-content">
+                    <h4>Total Quantity</h4>
+                    <p>{pnlData.summary.totalQuantity?.toLocaleString() || '0'}</p>
+                  </div>
+                </div>
+                <div className="summary-card sales">
+                  <div className="card-icon">🛒</div>
+                  <div className="card-content">
+                    <h4>Total Sales</h4>
+                    <p>{pnlData.summary.totalSales?.toLocaleString() || '0'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed P&L Table */}
+            <div className="table-section">
+              <h3>📋 Detailed Profit & Loss Report</h3>
+              <div className="history-table-container">
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Total Sales</th>
+                      <th>Total Purchase</th>
+                      <th>Total Quantity</th>
+                      <th>Total Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pnlData.periods && pnlData.periods.length > 0 ? (
+                      pnlData.periods.map((period, idx) => (
+                        <tr key={idx}>
+                          <td className="date-cell">{period.date || 'N/A'}</td>
+                          <td>৳{period.totalRevenue?.toLocaleString() || '0'}</td>
+                          <td>৳{period.totalCost?.toLocaleString() || '0'}</td>
+                          <td>{period.totalQuantity?.toLocaleString() || '0'}</td>
+                          <td>
+                            <span className={`profit-badge ${period.totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                              ৳{period.totalProfit?.toLocaleString() || '0'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="no-data">
+                          No data available for the selected date range
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
