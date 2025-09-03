@@ -569,8 +569,8 @@ function SalesInvoice() {
                               <div className="product-result-code">Code: {product.productCode}</div>
                               <div className="product-result-details">
                                 <span className="stock-info">Stock: {product.stock} {product.unit}</span>
-                                <span className="price-info">Price: ৳{product.sellingPrice?.toLocaleString()}</span>
-                                <span className="category-info">Category: {product.category?.name}</span>
+                                <span className="price-info">Buying Price: ৳{product.buyingPrice?.toLocaleString()}</span>
+                                <span className="type-info">Type: {product.typeEntity?.name}</span>
                               </div>
                             </div>
                             <button 
