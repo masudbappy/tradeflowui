@@ -294,8 +294,8 @@ function SalesInvoice() {
   };
 
   // Calculation logic
-  const subtotal = invoiceProducts.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
-  const grandTotal = subtotal - (parseFloat(discount) || 0) + (parseFloat(otherCost) || 0);
+  const subtotal = Math.round(invoiceProducts.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0));
+  const grandTotal = Math.round(subtotal - (parseFloat(discount) || 0) + (parseFloat(otherCost) || 0));
   const dueAmount = grandTotal - (parseFloat(amountPaid) || 0);
 
   // Print logic
