@@ -261,6 +261,16 @@ function SalesInvoice() {
     setInvoiceProducts(updated);
   };
 
+  // Reset calculation fields when all products are removed
+  useEffect(() => {
+    if (invoiceProducts.length === 0) {
+      setDiscount(0);
+      setOtherCost(0);
+      setAmountPaid(0);
+      setPaymentMethod(paymentMethods[0]);
+    }
+  }, [invoiceProducts.length]);
+
   const handleProductChange = async (idx, field, value) => {
     const updated = [...invoiceProducts];
     const product = updated[idx];
